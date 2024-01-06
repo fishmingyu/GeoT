@@ -23,7 +23,7 @@ print(f'Building with CUDA: {WITH_CUDA}, ', 'CUDA_HOME:', CUDA_HOME)
 
 def get_extensions():
     extensions = []
-    extensions_dir = osp.join('src')
+    extensions_dir = osp.join('csrc')
     main_files = glob.glob(osp.join(extensions_dir, '*.cpp'))
     main_files = [path for path in main_files]
 
@@ -54,7 +54,7 @@ def get_extensions():
             sources += [path]
         Extension = CUDAExtension
         extension = Extension(
-            f'dgsparse._{name}_{suffix}',
+            f'torch_index_scatter._{suffix}',
             sources,
             # include_dirs=[extensions_dir],
             define_macros=define_macros,
@@ -74,7 +74,6 @@ install_requires = [
 
 test_requires = [
     'pytest',
-    'pytest-cov',
 ]
 
 setup(
@@ -82,7 +81,7 @@ setup(
     version=__version__,
     description=(
         'PyTorch-Based Fast index scatter and gather operations for graph and pointcloud processing'),
-    author='Zhongming Yu',
+    author='Zhongming Yu, Genghan Zhang',
     author_email='zhy025@ucsd.edu',
     url=URL,
     download_url=f'{URL}/archive/{__version__}.tar.gz',

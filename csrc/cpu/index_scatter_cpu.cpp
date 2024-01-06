@@ -1,3 +1,4 @@
+#include "index_scatter_cpu.h"
 #include <ATen/Config.h>
 #include <ATen/Dispatch.h>
 #include <ATen/Functions.h>
@@ -129,11 +130,9 @@ void index_scatter_sorted_kernel(const at::Tensor &self,
       });
 }
 
-// this is an inplace operation
-at::Tensor &index_scatter_cpu(const at::Tensor &self, const int64_t dim,
-                              const at::Tensor &index, const at::Tensor &src,
-                              const c10::string_view reduce,
-                              const bool sorted) {
+at::Tensor index_scatter_cpu(const at::Tensor &self, const int64_t dim,
+                             const at::Tensor &index, const at::Tensor &src,
+                             const c10::string_view reduce, const bool sorted) {
   TORCH_CHECK(dim >= 0 && dim < src.dim(),
               "dim must be non-negative and less than input dimensions");
   TORCH_CHECK(index.dim() == 1, "index must be 1 dimensional");

@@ -1,4 +1,4 @@
-#include "../cpu/index_scatter_cpu.h"
+#include "./cpu/index_scatter_cpu.h"
 #include <ATen/Parallel.h>
 #include <ATen/core/Tensor.h>
 #include <torch/extension.h>
@@ -24,6 +24,6 @@ torch::Tensor index_scatter(const int64_t dim, torch::Tensor index,
 
 // set the registeration via TORCH_LIBRARY
 
-TORCH_LIBRARY_IMPL(torch_index_scatter, CPU, m) {
+TORCH_LIBRARY(torch_index_scatter, m) {
   m.impl("index_scatter", index_scatter);
 }
