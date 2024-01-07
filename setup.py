@@ -8,6 +8,7 @@ from setuptools import find_packages, setup
 from torch.utils.cpp_extension import (
     CUDA_HOME,
     BuildExtension,
+    CppExtension,
     CUDAExtension,
 )
 
@@ -37,7 +38,6 @@ def get_extensions():
             '-lm',
             '-ldl',
         ]
-        extra_link_args += ['-lcusparse'] if suffix == 'cuda' else []
 
         if suffix == 'cuda':
             define_macros += [('WITH_CUDA', None)]
@@ -49,14 +49,19 @@ def get_extensions():
         name = main.split(os.sep)[-1][:-4]
         sources = [main]
 
+        path = osp.join(extensions_dir, 'cpu', f'{name}_cpu.cpp')
+        if osp.exists(path):
+            sources += [path]
+
         path = osp.join(extensions_dir, 'cuda', f'{name}_cuda.cu')
         if suffix == 'cuda' and osp.exists(path):
             sources += [path]
-        Extension = CUDAExtension
+
+        Extension = CppExtension if suffix == 'cpu' else CUDAExtension
         extension = Extension(
             f'torch_index_scatter._{suffix}',
             sources,
-            # include_dirs=[extensions_dir],
+            include_dirs=[extensions_dir],
             define_macros=define_macros,
             undef_macros=undef_macros,
             extra_compile_args=extra_compile_args,

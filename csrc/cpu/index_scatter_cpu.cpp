@@ -17,16 +17,18 @@
 #include <ATen/native/cpu/ReduceUtils.h>
 #include <c10/util/irange.h>
 
+using namespace at::native;
+
 // this kernel take a sorted index tensor and scatter the src tensor
 // index is a 1D tensor of size nnz
-template <typename scalar_t, at::ReductionType reduce>
+template <typename scalar_t, ReductionType reduce>
 void index_scatter_sorted(const at::Tensor &self, const at::Tensor &index,
                           const at::Tensor &src) {
   int64_t *index_data = index.data_ptr<int64_t>();
   scalar_t *self_data = self.data_ptr<scalar_t>();
   scalar_t *src_data = src.data_ptr<scalar_t>();
 
-  const int64_t M = ensure_nonempty_size(self, 0);
+  // const int64_t M = ensure_nonempty_size(self, 0);
   const int64_t nnz = ensure_nonempty_size(index, 0);
   const int64_t K = index.numel() / nnz;
 
@@ -120,7 +122,7 @@ void index_scatter_sorted(const at::Tensor &self, const at::Tensor &index,
 
 void index_scatter_sorted_kernel(const at::Tensor &self,
                                  const at::Tensor &index, const at::Tensor &src,
-                                 const at::ReductionType &reduction) {
+                                 const ReductionType &reduction) {
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::BFloat16, at::ScalarType::Half, self.scalar_type(),
       "scatter_reduce_expanded_index", [&] {
