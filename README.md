@@ -1,5 +1,3 @@
-Revised:
-
 # Efficient Index Scatter Reduce for Geometric Deep Learning
 
 ## Motivation
