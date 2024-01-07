@@ -27,4 +27,4 @@ self[i][index[j]][k] += src[i][j][k]  # if dim == 1
 self[i][j][index[k]] += src[i][j][k]  # if dim == 2
 ```
 
-Additionally, we introduce a `sorted` flag to enhance the performance of the `index_scatter_reduce` kernel. A sorted input not only improves processing locality but also reduces atomic operations, significantly boosting the parallel processing capabilities of both CPUs and GPUs.
+Additionally, we have integrated a `sorted` flag to optimize the index_scatter_reduce kernel's performance. A sorted index enhances processing locality and minimizes atomic operations, thereby substantially improving the parallel processing efficiency for both CPUs and GPUs. This feature can be implemented from the revised frontend, as shown in the PyG framework code (#TODO). A sorted index adheres to a non-decreasing order. For instance, `index = [0, 0, 0, 1, 1, 2]` qualifies as a sorted index when sorted=True.
