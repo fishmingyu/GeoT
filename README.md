@@ -14,17 +14,17 @@ We have identified that although the scatter_reduce operation is a cornerstone i
 To address these challenges, we propose a new paradigm and frontend for this operation:
 
 ```
-Tensor.index_scatter_reduce_(dim, index, src, reduce, sorted=True, include_self=True) → Tensor
+dst = index_scatter_reduce_(dim, index, src, reduce, sorted=True) → Tensor
 ```
 
-Unlike the traditional scatter_reduce operation, we mandate that `self` and `src` have the same number of dimensions. The index is constrained to just one dimension. It is also required that `index.size(dim) <= src.size(dim)` for the specified `dim` argument.
+Unlike the traditional scatter_reduce operation, we mandate that `dst` and `src` have the same number of dimensions. The index is constrained to just one dimension. It is also required that `index.size(dim) <= src.size(dim)` for the specified `dim` argument.
 
-For a 3-D tensor with `reduce="sum"` and `include_self=True`, the output is calculated as follows:
+For a 3-D tensor with `reduce="sum"`, the output is calculated as follows:
 
 ```
-self[index[i]][j][k] += src[i][j][k]  # if dim == 0
-self[i][index[j]][k] += src[i][j][k]  # if dim == 1
-self[i][j][index[k]] += src[i][j][k]  # if dim == 2
+dst[index[i]][j][k] += src[i][j][k]  # if dim == 0
+dst[i][index[j]][k] += src[i][j][k]  # if dim == 1
+dst[i][j][index[k]] += src[i][j][k]  # if dim == 2
 ```
 
 Additionally, we have integrated a `sorted` flag to optimize the index_scatter_reduce kernel's performance. A sorted index enhances processing locality and minimizes atomic operations, thereby substantially improving the parallel processing efficiency for both CPUs and GPUs. This feature can be implemented from the revised frontend, as shown in the PyG framework code (#TODO). A sorted index adheres to a non-decreasing order. For instance, `index = [0, 0, 0, 1, 1, 2]` qualifies as a sorted index when sorted=True.
