@@ -125,7 +125,7 @@ void index_scatter_sorted_kernel(const at::Tensor &self,
                                  const ReductionType &reduction) {
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::BFloat16, at::ScalarType::Half, self.scalar_type(),
-      "scatter_reduce_expanded_index", [&] {
+      "index_scatter_sorted", [&] {
         AT_DISPATCH_REDUCTION_TYPES(reduction, [&]() {
           index_scatter_sorted<scalar_t, reduce>(self, index, src);
         });
