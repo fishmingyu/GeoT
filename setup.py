@@ -15,7 +15,7 @@ from torch.utils.cpp_extension import (
 __version__ = '0.0.1'
 URL = ''
 
-WITH_CUDA = False
+WITH_CUDA = True
 # if torch.cuda.is_available():
 #     WITH_CUDA = CUDA_HOME is not None
 suffices = ['cuda', 'cpu'] if WITH_CUDA else ['cpu']

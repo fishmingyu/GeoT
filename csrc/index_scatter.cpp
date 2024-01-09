@@ -26,8 +26,8 @@ at::Tensor index_scatter_cuda_impl(const int64_t dim, at::Tensor index,
                                    const c10::string_view reduce,
                                    const bool sorted) {
   auto max_index = index.max().item<int64_t>();
-  // src could be multi-dimensional, so the output tensor's shape is decided by
-  // max_index and src shape except dim
+  // src could be multi-dimensional, so the output tensor's shape is decided
+  // by max_index and src shape except dim
   auto output_shape = src.sizes().vec();
   output_shape[dim] = max_index + 1;
   auto output = torch::zeros(output_shape, src.options());

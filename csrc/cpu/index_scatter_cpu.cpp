@@ -1,4 +1,5 @@
 #include "index_scatter_cpu.h"
+#include "../utils.h"
 #include <ATen/Config.h>
 #include <ATen/Dispatch.h>
 #include <ATen/Functions.h>
@@ -126,7 +127,7 @@ void index_scatter_sorted_kernel(const at::Tensor &self,
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::BFloat16, at::ScalarType::Half, self.scalar_type(),
       "index_scatter_sorted", [&] {
-        AT_DISPATCH_REDUCTION_TYPES(reduction, [&]() {
+        DISPATCH_REDUCTION_TYPES(reduction, [&]() {
           index_scatter_sorted<scalar_t, reduce>(self, index, src);
         });
       });
