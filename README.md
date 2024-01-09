@@ -14,7 +14,7 @@ We have identified that although the scatter_reduce operation is a cornerstone i
 To address these challenges, we propose a new paradigm and frontend for this operation:
 
 ```
-dst = index_scatter_reduce_(dim, index, src, reduce, sorted=True) → Tensor
+dst = index_scatter_reduce(dim, index, src, reduce, sorted=True) → Tensor
 ```
 
 Unlike the traditional scatter_reduce operation, we mandate that `dst` and `src` have the same number of dimensions. The index is constrained to just one dimension. It is also required that `index.size(dim) <= src.size(dim)` for the specified `dim` argument.

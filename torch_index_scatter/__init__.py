@@ -1,7 +1,6 @@
 import importlib
 import os.path as osp
 import torch
-import torch_index_scatter._C
 
 __version__ = '0.0.1'
 

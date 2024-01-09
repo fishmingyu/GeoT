@@ -1,5 +1,5 @@
 #include "../utils.h"
-#include "index_scatter_cuda.h"
+#include "index_scatter_cuda.cuh"
 #include <ATen/Dispatch.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <ATen/cuda/detail/IndexUtils.cuh>
@@ -11,7 +11,7 @@
 using namespace at::native;
 
 // coo parallel, scalar, row-major
-template <typename scalar_t, ReductionType reduce>
+template <typename scalar_t, ReductionType reduce, int ne_block>
 __global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
                                             const int64_t *indices,
                                             const scalar_t *src,
@@ -24,7 +24,7 @@ __global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
     scalar_t val = __ldg(src + vid);
     int curr_row = row;
 
-    for (int ii = 1; ii < NE_PER_BLOCK && ++eid < nnz; ii++) {
+    for (int ii = 1; ii < ne_block && ++eid < nnz; ii++) {
       row = __ldg(indices + eid);
 
       if (row != curr_row) {
@@ -50,7 +50,7 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
   const int threads = nv;
   const int blocks = (nnz + NE_PER_BLOCK - 1) / NE_PER_BLOCK;
 
-  index_scatter_sorted_kernel<scalar_t, reduce>
+  index_scatter_sorted_kernel<scalar_t, reduce, NE_PER_BLOCK>
       <<<threads, blocks>>>(nnz, nv, indices, src_data, dst_data);
 }
 

@@ -18,11 +18,12 @@
 #include <ATen/native/cpu/ReduceUtils.h>
 #include <c10/util/irange.h>
 
+#define BLOCKING 16
 using namespace at::native;
 
 // this kernel take a sorted index tensor and scatter the src tensor
 // index is a 1D tensor of size nnz
-template <typename scalar_t, ReductionType reduce>
+template <typename scalar_t, ReductionType reduce, int block_size>
 void index_scatter_sorted(const at::Tensor &self, const at::Tensor &index,
                           const at::Tensor &src) {
   int64_t *index_data = index.data_ptr<int64_t>();
@@ -128,7 +129,7 @@ void index_scatter_sorted_kernel(const at::Tensor &self,
       at::ScalarType::BFloat16, at::ScalarType::Half, self.scalar_type(),
       "index_scatter_sorted", [&] {
         DISPATCH_REDUCTION_TYPES(reduction, [&]() {
-          index_scatter_sorted<scalar_t, reduce>(self, index, src);
+          index_scatter_sorted<scalar_t, reduce, BLOCKING>(self, index, src);
         });
       });
 }
