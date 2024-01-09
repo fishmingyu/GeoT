@@ -3,6 +3,7 @@
 #include <ATen/Parallel.h>
 #include <ATen/core/Tensor.h>
 #include <torch/extension.h>
+#include <torch/library.h>
 
 // this kernel take a sorted index tensor and scatter the src tensor
 // index is a 1D tensor of size nnz
@@ -38,10 +39,12 @@ at::Tensor index_scatter_cuda_impl(const int64_t dim, at::Tensor index,
 
 // set the registeration via TORCH_LIBRARY_IMPL
 
-TORCH_LIBRARY_IMPL(aten, CPU, m) {
-  m.impl("index_scatter", index_scatter_cpu_impl);
+TORCH_LIBRARY_IMPL(torch_index_scatter, CPU, m) {
+  m.impl(TORCH_SELECTIVE_NAME("torch_index_scatter::index_scatter"),
+         index_scatter_cpu_impl);
 }
 
-TORCH_LIBRARY_IMPL(aten, CUDA, m) {
-  m.impl("index_scatter", index_scatter_cuda_impl);
+TORCH_LIBRARY_IMPL(torch_index_scatter, CUDA, m) {
+  m.impl(TORCH_SELECTIVE_NAME("torch_index_scatter::index_scatter"),
+         index_scatter_cuda_impl);
 }
