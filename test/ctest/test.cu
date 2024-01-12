@@ -31,6 +31,16 @@ void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
       src.d_array.get(), index.d_array.get(), nnz, N, dst.d_array.get());
 }
 
+template <typename ValueType, typename IndexType>
+void check(int nnz, int N, int keys, util::RamArray<IndexType> &index,
+           util::RamArray<ValueType> &src, util::RamArray<ValueType> &dst) {
+  dst.tocpu();
+  src.tocpu();
+  index.tocpu();
+  util::checkSegScan<ValueType, IndexType>(dst.h_array.get(), src.h_array.get(),
+                                           index.h_array.get(), nnz, N, keys);
+}
+
 int main(int argc, char **argv) {
   // Host problem definition
   if (argc < 3) {
@@ -42,7 +52,7 @@ int main(int argc, char **argv) {
   int feature_size = atoi(argv[2]);
 
   const int iter = 300;
-  auto indexDescr = DataLoader<Index, DType>(filename);
+  auto indexDescr = DataLoader<DType, Index>(filename);
   int nnz = indexDescr.nnz;
   int keys = indexDescr.keys;
 
@@ -52,9 +62,9 @@ int main(int argc, char **argv) {
   src.fill_random_h();
   dst.fill_zero_h();
   // to GPU
-  src.upload();
-  dst.upload();
-  indexDescr.upload();
+  src.tocuda();
+  dst.tocuda();
+  indexDescr.tocuda();
   printf("start index scatter test\n");
   cudaDeviceSynchronize();
   // warm up
@@ -63,5 +73,6 @@ int main(int argc, char **argv) {
 
   segscan_sr_sorted<DType, Index, 2, 4, 8, 2, 16>(
       nnz, feature_size, indexDescr.sp_indices, src, dst);
+  check<DType, Index>(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
   return 0;
 }

@@ -10,90 +10,95 @@
 
 namespace util {
 
-template <typename DType> struct deleter {
-  void operator()(DType const *ptr) { delete[] ptr; }
+template <typename ValueType> struct deleter {
+  void operator()(ValueType const *ptr) { delete[] ptr; }
 };
 
-template <typename DType> struct cudaDeleter {
-  void operator()(DType const *ptr) { checkCudaError(cudaFree((void *)ptr)); }
+template <typename ValueType> struct cudaDeleter {
+  void operator()(ValueType const *ptr) {
+    checkCudaError(cudaFree((void *)ptr));
+  }
 };
 
-template <class DType> class RamArray {
+template <class ValueType> class RamArray {
 public:
   RamArray(int len);
   RamArray();
-  void upload(); // upload
-  void download();
+  void tocuda(); // tocuda
+  void tocpu();
   void create(int len); // create a new array and fill random
-  void create(int len, std::vector<DType> vec);
+  void create(int len, std::vector<ValueType> vec);
   void fill_random_h();
   void fill_zero_h();
   void fill_default_one();
   void reset();
   ~RamArray();
-  std::shared_ptr<DType> h_array;
-  std::shared_ptr<DType> d_array;
+  std::shared_ptr<ValueType> h_array;
+  std::shared_ptr<ValueType> d_array;
   int len;
 
 private:
   size_t size;
 };
 
-template <typename DType> RamArray<DType>::RamArray() {}
+template <typename ValueType> RamArray<ValueType>::RamArray() {}
 
-template <typename DType> RamArray<DType>::RamArray(int _len) {
+template <typename ValueType> RamArray<ValueType>::RamArray(int _len) {
   len = _len;
-  size = len * sizeof(DType);
-  h_array = std::shared_ptr<DType>(new DType[len], deleter<DType>());
-  d_array = std::shared_ptr<DType>(nullptr, cudaDeleter<DType>());
+  size = len * sizeof(ValueType);
+  h_array =
+      std::shared_ptr<ValueType>(new ValueType[len], deleter<ValueType>());
+  d_array = std::shared_ptr<ValueType>(nullptr, cudaDeleter<ValueType>());
   checkCudaError(cudaMalloc((void **)&d_array, size));
 }
 
-template <typename DType> void RamArray<DType>::create(int _len) {
+template <typename ValueType> void RamArray<ValueType>::create(int _len) {
   len = _len;
-  size = len * sizeof(DType);
-  h_array = std::shared_ptr<DType>(new DType[len], deleter<DType>());
-  d_array = std::shared_ptr<DType>(nullptr, cudaDeleter<DType>());
+  size = len * sizeof(ValueType);
+  h_array =
+      std::shared_ptr<ValueType>(new ValueType[len], deleter<ValueType>());
+  d_array = std::shared_ptr<ValueType>(nullptr, cudaDeleter<ValueType>());
   checkCudaError(cudaMalloc((void **)&d_array, size));
 }
 
-template <typename DType>
-void RamArray<DType>::create(int _len, std::vector<DType> vec) {
+template <typename ValueType>
+void RamArray<ValueType>::create(int _len, std::vector<ValueType> vec) {
   len = _len;
-  size = len * sizeof(DType);
-  h_array = std::shared_ptr<DType>(new DType[len], deleter<DType>());
+  size = len * sizeof(ValueType);
+  h_array =
+      std::shared_ptr<ValueType>(new ValueType[len], deleter<ValueType>());
   std::copy(vec.begin(), vec.end(), h_array.get());
-  d_array = std::shared_ptr<DType>(nullptr, cudaDeleter<DType>());
+  d_array = std::shared_ptr<ValueType>(nullptr, cudaDeleter<ValueType>());
   checkCudaError(cudaMalloc((void **)&d_array, size));
 }
 
-template <typename DType> RamArray<DType>::~RamArray() {}
+template <typename ValueType> RamArray<ValueType>::~RamArray() {}
 
-template <typename DType> void RamArray<DType>::fill_random_h() {
+template <typename ValueType> void RamArray<ValueType>::fill_random_h() {
   for (int i = 0; i < len; i++) {
-    h_array.get()[i] = (DType)(std::rand() % 10) / 10;
+    h_array.get()[i] = (ValueType)(std::rand() % 10) / 10;
   }
 }
 
-template <typename DType> void RamArray<DType>::fill_zero_h() {
+template <typename ValueType> void RamArray<ValueType>::fill_zero_h() {
   std::fill(h_array.get(), h_array.get() + len, 0x0);
 }
 
-template <typename DType> void RamArray<DType>::fill_default_one() {
+template <typename ValueType> void RamArray<ValueType>::fill_default_one() {
   std::fill(h_array.get(), h_array.get() + len, 1);
 }
 
-template <typename DType> void RamArray<DType>::reset() {
+template <typename ValueType> void RamArray<ValueType>::reset() {
   fill_zero_h();
   checkCudaError(cudaMemset(d_array.get(), 0, size));
 }
 
-template <typename DType> void RamArray<DType>::upload() {
+template <typename ValueType> void RamArray<ValueType>::tocuda() {
   checkCudaError(cudaMemcpy((void *)d_array.get(), (void *)h_array.get(), size,
                             cudaMemcpyHostToDevice));
 }
 
-template <typename DType> void RamArray<DType>::download() {
+template <typename ValueType> void RamArray<ValueType>::tocpu() {
   checkCudaError(cudaMemcpy((void *)h_array.get(), (void *)d_array.get(), size,
                             cudaMemcpyDeviceToHost));
 }

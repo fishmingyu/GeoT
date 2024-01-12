@@ -4,9 +4,11 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <cusparse.h>
+#include <iostream>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <vector>
 
 #define gpuErrchk(ans)                                                         \
   { gpuAssert((ans), __FILE__, __LINE__); }
@@ -70,6 +72,35 @@ bool check_result(int M, int N, DType *C, DType *C_ref, int errors = 10) {
     }
   }
   return passed;
+}
+
+template <typename ValueType, typename IndexType>
+void segment_coo_sequencial(const ValueType *src, const IndexType *index,
+                            const int nnz, const int N, const int dst_len,
+                            ValueType *dst) {
+  for (int i = 0; i < nnz; i++) {
+#pragma unroll
+    for (int j = 0; j < N; j++) {
+      dst[index[i] * N + j] += src[i * N + j];
+    }
+  }
+}
+
+template <typename ValueType, typename IndexType>
+void checkSegScan(ValueType *dst, ValueType *src, IndexType *index, int nnz,
+                  int N, int dst_len) {
+  std::vector<ValueType> dst_cpu(dst_len * N, 0);
+  segment_coo_sequencial<ValueType, IndexType>(src, index, nnz, N, dst_len,
+                                               dst_cpu.data());
+  std::cout << "Finish golden" << std::endl;
+  for (int i = 0; i < N * dst_len; i++) {
+    if (fabs(dst[i] - dst_cpu[i]) > 1e-2 * fabs(dst_cpu[i])) {
+      printf("Error[%d][%d]: dst = %f, dst_cpu = %f\n", i / N, i % N, dst[i],
+             dst_cpu[i]);
+      return;
+    }
+  }
+  printf("Check passed!\n");
 }
 
 template <typename T>
