@@ -106,9 +106,9 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
   nnz = csr_indices_buffer.size();
 }
 
-template <typename Index>
-void compressedRow(Index nrow, std::vector<Index> &rowind,
-                   std::vector<Index> &rowptr) {
+template <typename IndexType>
+void compressedRow(IndexType nrow, std::vector<IndexType> &rowind,
+                   std::vector<IndexType> &rowptr) {
   int64_t curr_pos = 0;
   rowptr.push_back(0);
   int64_t nnz = rowind.size();
@@ -120,13 +120,14 @@ void compressedRow(Index nrow, std::vector<Index> &rowind,
   }
 }
 
-template <typename Index>
-void transpose(Index ncol, std::vector<Index> &row, std::vector<Index> &col,
-               std::vector<Index> &row_t, std::vector<Index> &col_t) {
+template <typename IndexType>
+void transpose(int ncol, std::vector<IndexType> &row,
+               std::vector<IndexType> &col, std::vector<IndexType> &row_t,
+               std::vector<IndexType> &col_t) {
   int64_t nnz = col.size();
-  Index *hist = new Index[ncol];
-  Index *col_tmp = new Index[ncol + 1];
-  memset(hist, 0x0, sizeof(Index) * ncol);
+  IndexType *hist = new IndexType[ncol];
+  IndexType *col_tmp = new IndexType[ncol + 1];
+  memset(hist, 0x0, sizeof(IndexType) * ncol);
   for (int64_t t = 0; t < nnz; t++)
     hist[col[t]]++;
   col_tmp[0] = 1;
@@ -143,9 +144,9 @@ void transpose(Index ncol, std::vector<Index> &row, std::vector<Index> &col,
   delete[] col_tmp;
 }
 
-template <class Index, class DType> struct SpMatCsrDescr_t {
-  SpMatCsrDescr_t(int64_t ncol_, std::vector<Index> &indptr,
-                  std::vector<Index> &indices) {
+template <class IndexType, class ValueType> struct SpMatCsrDescr_t {
+  SpMatCsrDescr_t(int64_t ncol_, std::vector<IndexType> &indptr,
+                  std::vector<IndexType> &indices) {
     nrow = indptr.size() - 1;
     ncol = ncol_;
     nnz = indices.size();
@@ -154,54 +155,54 @@ template <class Index, class DType> struct SpMatCsrDescr_t {
     sp_data.create(nnz);
     sp_data.fill_default_one();
   }
-  void upload() {
-    sp_csrptr.upload();
-    sp_csrind.upload();
-    sp_data.upload();
+  void tocuda() {
+    sp_csrptr.tocuda();
+    sp_csrind.tocuda();
+    sp_data.tocuda();
   }
   int64_t nrow;
   int64_t ncol;
   int64_t nnz;
-  util::RamArray<Index> sp_csrptr;
-  util::RamArray<Index> sp_csrind;
-  util::RamArray<DType> sp_data;
+  util::RamArray<IndexType> sp_csrptr;
+  util::RamArray<IndexType> sp_csrind;
+  util::RamArray<ValueType> sp_data;
 };
 
-template <class Index, class DType> struct SpMatCooDescr_t {
-  SpMatCooDescr_t(int64_t ncol_, std::vector<Index> &rowind,
-                  std::vector<Index> &indices) {
+template <class IndexType, class ValueType> struct SpMatCooDescr_t {
+  SpMatCooDescr_t(int64_t ncol_, std::vector<IndexType> &rowind,
+                  std::vector<IndexType> &indices) {
     nnz = indices.size();
     sp_rowind.create(nnz, rowind);
     sp_colind.create(nnz, indices);
   }
-  void upload() {
-    sp_rowind.upload();
-    sp_colind.upload();
+  void tocuda() {
+    sp_rowind.tocuda();
+    sp_colind.tocuda();
   }
   int64_t nnz;
-  util::RamArray<Index> sp_rowind;
-  util::RamArray<Index> sp_colind;
-  util::RamArray<DType> sp_data;
+  util::RamArray<IndexType> sp_rowind;
+  util::RamArray<IndexType> sp_colind;
+  util::RamArray<ValueType> sp_data;
 };
 
-template <class Index> struct IndexDescr_t {
-  IndexDescr_t(std::vector<Index> &ptr, std::vector<Index> &indices) {
+template <class IndexType> struct IndexDescr_t {
+  IndexDescr_t(std::vector<IndexType> &ptr, std::vector<IndexType> &indices) {
     keys = ptr.size() - 1;
     nnz = indices.size();
     sp_indices.create(nnz, indices);
   }
-  void upload() { sp_indices.upload(); }
+  void tocuda() { sp_indices.tocuda(); }
   int64_t nnz;
   int64_t keys;
-  util::RamArray<Index> sp_indices;
+  util::RamArray<IndexType> sp_indices;
 };
 
-template <class Index, class DType>
-IndexDescr_t<Index> DataLoader(const char *filename) {
+template <typename ValueType, typename IndexType>
+IndexDescr_t<IndexType> DataLoader(const char *filename) {
   int nrow, ncol, nnz;
-  std::vector<Index> csrptr, col, row;
+  std::vector<IndexType> csrptr, col, row;
   read_mtx_file(filename, nrow, ncol, nnz, csrptr, col, row);
-  IndexDescr_t<Index> indexDescr(csrptr, col);
+  IndexDescr_t<IndexType> indexDescr(csrptr, row);
   return indexDescr; // sorted row index
 }
 
