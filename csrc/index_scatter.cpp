@@ -1,5 +1,5 @@
 #include "./cpu/index_scatter_cpu.h"
-#include "./cuda/index_scatter_cuda.cuh"
+#include "./cuda/index_scatter_cuda.h"
 #include <ATen/Parallel.h>
 #include <ATen/core/Tensor.h>
 #include <torch/extension.h>

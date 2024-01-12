@@ -1,42 +1,14 @@
-#include "../utils.h"
-#include "index_scatter_cuda.cuh"
+#include "../reduceutils.h"
+#include "index_scatter_cuda.h"
+#include "index_scatter_kernel.cuh"
 #include <ATen/Dispatch.h>
 #include <ATen/cuda/CUDAContext.h>
 #include <ATen/cuda/detail/IndexUtils.cuh>
 #include <ATen/cuda/detail/TensorInfo.cuh>
-#include <ATen/native/ReductionType.h>
 
 #define NE_PER_BLOCK 32
 
 using namespace at::native;
-
-// coo parallel, scalar, row-major
-template <typename scalar_t, ReductionType reduce, int ne_block>
-__global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
-                                            const int64_t *indices,
-                                            const scalar_t *src,
-                                            scalar_t *dst) {
-  int eid = blockDim.x * blockIdx.x;
-  int vid = threadIdx.x;
-
-  if (eid < nnz) {
-    int row = __ldg(indices + eid);
-    scalar_t val = __ldg(src + vid);
-    int curr_row = row;
-
-    for (int ii = 1; ii < ne_block && ++eid < nnz; ii++) {
-      row = __ldg(indices + eid);
-
-      if (row != curr_row) {
-        atomicAdd(&dst[curr_row * nv], val);
-        curr_row = row;
-      } else {
-        val += __ldg(src + row * nv);
-      }
-    }
-    atomicAdd(&dst[curr_row * nv], val);
-  }
-}
 
 template <typename scalar_t, ReductionType reduce>
 void index_scatter_sorted_wrapper(const at::Tensor &index,
@@ -51,7 +23,7 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
   const int blocks = (nnz + NE_PER_BLOCK - 1) / NE_PER_BLOCK;
 
   index_scatter_sorted_kernel<scalar_t, reduce, NE_PER_BLOCK>
-      <<<threads, blocks>>>(nnz, nv, indices, src_data, dst_data);
+      <<<blocks, threads>>>(nnz, nv, indices, src_data, dst_data);
 }
 
 void index_scatter_sorted_dispatch(const at::Tensor &index,

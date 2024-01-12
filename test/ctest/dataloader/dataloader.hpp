@@ -20,9 +20,9 @@
 // Load sparse matrix from an mtx file. Only non-zero positions are loaded,
 // and values are dropped.
 void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
-                   std::vector<int> &csr_indptr_buffer,
-                   std::vector<int> &csr_indices_buffer,
-                   std::vector<int> &coo_rowind_buffer) {
+                   std::vector<int64_t> &csr_indptr_buffer,
+                   std::vector<int64_t> &csr_indices_buffer,
+                   std::vector<int64_t> &coo_rowind_buffer) {
   FILE *f;
 
   if ((f = fopen(filename, "r")) == NULL) {
@@ -44,7 +44,7 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
 
   /// read tuples
 
-  std::vector<std::tuple<int, int>> coords;
+  std::vector<std::tuple<int64_t, int64_t>> coords;
   int row_id, col_id;
   float dummy;
   for (int64_t i = 0; i < nnz; i++) {
@@ -67,10 +67,10 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
   /// make symmetric
 
   if (mm_is_symmetric(matcode)) {
-    std::vector<std::tuple<int, int>> new_coords;
+    std::vector<std::tuple<int64_t, int64_t>> new_coords;
     for (auto iter = coords.begin(); iter != coords.end(); iter++) {
-      int i = std::get<0>(*iter);
-      int j = std::get<1>(*iter);
+      int64_t i = std::get<0>(*iter);
+      int64_t j = std::get<1>(*iter);
       if (i != j) {
         new_coords.push_back(std::make_tuple(i, j));
         new_coords.push_back(std::make_tuple(j, i));
@@ -92,7 +92,7 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
   csr_indptr_buffer.clear();
   csr_indices_buffer.clear();
 
-  int curr_pos = 0;
+  int64_t curr_pos = 0;
   csr_indptr_buffer.push_back(0);
   for (int64_t row = 0; row < nrow; row++) {
     while ((curr_pos < nnz) && (std::get<0>(coords[curr_pos]) == row)) {
@@ -109,9 +109,9 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
 template <typename Index>
 void compressedRow(Index nrow, std::vector<Index> &rowind,
                    std::vector<Index> &rowptr) {
-  int curr_pos = 0;
+  int64_t curr_pos = 0;
   rowptr.push_back(0);
-  int nnz = rowind.size();
+  int64_t nnz = rowind.size();
   for (int64_t row = 0; row < nrow; row++) {
     while ((curr_pos < nnz) && ((rowind[curr_pos]) == row)) {
       curr_pos++;
@@ -123,18 +123,18 @@ void compressedRow(Index nrow, std::vector<Index> &rowind,
 template <typename Index>
 void transpose(Index ncol, std::vector<Index> &row, std::vector<Index> &col,
                std::vector<Index> &row_t, std::vector<Index> &col_t) {
-  int nnz = col.size();
+  int64_t nnz = col.size();
   Index *hist = new Index[ncol];
   Index *col_tmp = new Index[ncol + 1];
   memset(hist, 0x0, sizeof(Index) * ncol);
-  for (int t = 0; t < nnz; t++)
+  for (int64_t t = 0; t < nnz; t++)
     hist[col[t]]++;
   col_tmp[0] = 1;
-  for (int c = 1; c <= ncol; ++c)
+  for (int64_t c = 1; c <= ncol; ++c)
     col_tmp[c] = col_tmp[c - 1] + hist[c - 1];
-  for (int nid = 0; nid < nnz; nid++) {
-    int col_ = col[nid];
-    int q = col_tmp[col_];
+  for (int64_t nid = 0; nid < nnz; nid++) {
+    int64_t col_ = col[nid];
+    int64_t q = col_tmp[col_];
     row_t[q - 1] = col[nid];
     col_t[q - 1] = row[nid];
     col_tmp[col_]++;
@@ -144,7 +144,7 @@ void transpose(Index ncol, std::vector<Index> &row, std::vector<Index> &col,
 }
 
 template <class Index, class DType> struct SpMatCsrDescr_t {
-  SpMatCsrDescr_t(int ncol_, std::vector<Index> &indptr,
+  SpMatCsrDescr_t(int64_t ncol_, std::vector<Index> &indptr,
                   std::vector<Index> &indices) {
     nrow = indptr.size() - 1;
     ncol = ncol_;
@@ -159,38 +159,50 @@ template <class Index, class DType> struct SpMatCsrDescr_t {
     sp_csrind.upload();
     sp_data.upload();
   }
-  int nrow;
-  int ncol;
-  int nnz;
+  int64_t nrow;
+  int64_t ncol;
+  int64_t nnz;
   util::RamArray<Index> sp_csrptr;
   util::RamArray<Index> sp_csrind;
   util::RamArray<DType> sp_data;
 };
 
-template <class Index, class DType>
-std::tuple<SpMatCsrDescr_t<Index, DType>, SpMatCsrDescr_t<Index, DType>>
-DataLoader(const char *filename) {
-  int H_nrow, H_ncol, H_nnz;
-  std::vector<Index> H_csrptr, H_csrind, H_coorow;
-  read_mtx_file(filename, H_nrow, H_ncol, H_nnz, H_csrptr, H_csrind, H_coorow);
-  printf("H_t.nrow %d H_t.ncol %d H_nnz %d\n", H_nrow, H_ncol, H_nnz);
-  std::vector<Index> H_t_csrptr, H_t_csrind(H_nnz, 0), H_t_coorow(H_nnz, 0);
-  transpose<Index>(H_ncol, H_coorow, H_csrind, H_t_coorow, H_t_csrind);
-  compressedRow(H_ncol, H_t_coorow, H_t_csrptr);
-  SpMatCsrDescr_t<Index, DType> H(H_ncol, H_csrptr, H_csrind),
-      H_t(H_nrow, H_t_csrptr, H_t_csrind);
-  return {H, H_t};
-}
+template <class Index, class DType> struct SpMatCooDescr_t {
+  SpMatCooDescr_t(int64_t ncol_, std::vector<Index> &rowind,
+                  std::vector<Index> &indices) {
+    nnz = indices.size();
+    sp_rowind.create(nnz, rowind);
+    sp_colind.create(nnz, indices);
+  }
+  void upload() {
+    sp_rowind.upload();
+    sp_colind.upload();
+  }
+  int64_t nnz;
+  util::RamArray<Index> sp_rowind;
+  util::RamArray<Index> sp_colind;
+  util::RamArray<DType> sp_data;
+};
+
+template <class Index> struct IndexDescr_t {
+  IndexDescr_t(std::vector<Index> &ptr, std::vector<Index> &indices) {
+    keys = ptr.size() - 1;
+    nnz = indices.size();
+    sp_indices.create(nnz, indices);
+  }
+  void upload() { sp_indices.upload(); }
+  int64_t nnz;
+  int64_t keys;
+  util::RamArray<Index> sp_indices;
+};
 
 template <class Index, class DType>
-SpMatCsrDescr_t<Index, DType> SingleDataLoader(const char *filename) {
-  int H_nrow, H_ncol, H_nnz;
-  std::vector<Index> H_csrptr, H_csrind, H_coorow;
-  read_mtx_file(filename, H_nrow, H_ncol, H_nnz, H_csrptr, H_csrind, H_coorow);
-  SpMatCsrDescr_t<Index, DType> H(H_ncol, H_csrptr, H_csrind);
-  return H;
+IndexDescr_t<Index> DataLoader(const char *filename) {
+  int nrow, ncol, nnz;
+  std::vector<Index> csrptr, col, row;
+  read_mtx_file(filename, nrow, ncol, nnz, csrptr, col, row);
+  IndexDescr_t<Index> indexDescr(csrptr, col);
+  return indexDescr; // sorted row index
 }
-
-
 
 #endif
