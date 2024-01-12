@@ -202,7 +202,7 @@ IndexDescr_t<IndexType> DataLoader(const char *filename) {
   int nrow, ncol, nnz;
   std::vector<IndexType> csrptr, col, row;
   read_mtx_file(filename, nrow, ncol, nnz, csrptr, col, row);
-  IndexDescr_t<IndexType> indexDescr(csrptr, col);
+  IndexDescr_t<IndexType> indexDescr(csrptr, row);
   return indexDescr; // sorted row index
 }
 
