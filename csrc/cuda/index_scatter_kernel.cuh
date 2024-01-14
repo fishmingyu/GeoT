@@ -75,7 +75,8 @@ __global__ void segscan_sr_sorted_kernel(const ValueType *src,
   }
 
   int thread_nz_id;
-  IndexType k, curr_row, next_row, start_row, end_row;
+  IndexType k, curr_row, next_row, start_row, end_row, prev_row;
+  bool atomic_start = false;
   ValueType v;
   for (; nz_start < nnz; nz_start += stride) {
     for (int g = 0; g < ThreadNz; g++) {
@@ -85,16 +86,18 @@ __global__ void segscan_sr_sorted_kernel(const ValueType *src,
         colids[g] = thread_nz_id;
         data[g] = (ValueType)1;
       } else {
-        rowids[g] = nnz - thread_nz_id - 1;
+        rowids[g] = - 1;
         colids[g] = 0;
         data[g] = (ValueType)0;
       }
     }
+    prev_row = nz_start == 0 ? 0 : index[nz_start - 1];
     start_row = rowids[0];
     end_row = rowids[ThreadNz - 1];
     curr_row = rowids[0];
     k = colids[0];
     v = data[0];
+    atomic_start = (start_row == prev_row);
 // initialize with first value
 #pragma unroll
     for (int i = 0; i < valid_lane_num; i++) {
@@ -108,7 +111,7 @@ __global__ void segscan_sr_sorted_kernel(const ValueType *src,
         break;
       }
       if (next_row != curr_row) {
-        if (curr_row == start_row || curr_row == end_row) {
+        if (curr_row == start_row && atomic_start) {
 #pragma unroll
           for (int i = 0; i < valid_lane_num; i++) {
             atomicAdd(dst_lanes[i] + curr_row * lddst, o[i]);
