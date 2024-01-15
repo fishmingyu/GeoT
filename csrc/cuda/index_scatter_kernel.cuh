@@ -91,7 +91,7 @@ __global__ void segscan_sr_sorted_kernel(const ValueType *src,
         data[g] = (ValueType)0;
       }
     }
-    prev_row = nz_start == 0 ? 0 : index[nz_start - 1];
+    prev_row = nz_start == 0 ? -1 : index[nz_start - 1];
     start_row = rowids[0];
     end_row = rowids[ThreadNz - 1];
     curr_row = rowids[0];
