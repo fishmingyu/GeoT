@@ -40,29 +40,48 @@ void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
 }
 
 int main(int argc, char **argv) {
-  // Host problem definition
-  if (argc < 3) {
-    printf("Input: first get the path of sparse matrix, then get the "
-           "feature length of dense matrix\n");
-    exit(1);
+  int range, nnz_in, feature_size, max_seg, min_seg;
+  double cv; // CV (coefficient of variation) = std / mean
+  
+  // Random generate [nnz, N] dense vector
+  for (int i = 1; i < argc; i++) {
+      #define INT_ARG(argname, varname) do {      \
+                if (!strcmp(argv[i], (argname))) {  \
+                  varname = atoi(argv[++i]);      \
+                  continue;                       \
+                } } while(0);
+      #define DOUBLE_ARG(argname, varname) do {      \
+                char* end;                           \
+                if (!strcmp(argv[i], (argname))) {  \
+                  varname = strtod(argv[++i], &end);      \
+                  continue;                       \
+                } } while(0);
+          INT_ARG("-r", range);
+          INT_ARG("-nnz", nnz_in);
+          INT_ARG("-min", min_seg);
+          INT_ARG("-max", max_seg);
+          DOUBLE_ARG("-cv", cv);
+          INT_ARG("-N", feature_size);
+      #undef INT_ARG
   }
-  char *filename = argv[1];
-  int feature_size = atoi(argv[2]);
 
   const int iter = 300;
-  auto indexDescr = DataLoader<DType, Index>(filename);
-  int nnz = indexDescr.nnz;
-  int keys = indexDescr.keys;
+  std::vector<Index> index;
+  generateIndex<Index>(range, min_seg, max_seg, nnz_in, cv, index);
+  int nnz = nnz_in;
+  int keys = range;
 
   util::RamArray<DType> src(nnz * feature_size);
-  util::RamArray<DType> dst(keys * feature_size);
+  util::RamArray<DType> dst(range * feature_size);
+  util::RamArray<Index> sp_indices;
+  sp_indices.create(nnz, index);
 
   src.fill_random_h();
   dst.fill_zero_h();
   // to GPU
   src.tocuda();
   dst.tocuda();
-  indexDescr.tocuda();
+  sp_indices.tocuda();
   printf("start index scatter test\n");
   cudaDeviceSynchronize();
   // warm up
@@ -70,7 +89,7 @@ int main(int argc, char **argv) {
     warm_up<<<1, 1>>>();
 
   segscan_sr_sorted<DType, 2, 16, 32, 2>(nnz, feature_size,
-                                         indexDescr.sp_indices, src, dst);
-  check<DType>(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
+                                         sp_indices, src, dst);
+  check<DType>(nnz, feature_size, keys, sp_indices, src, dst);
   return 0;
 }

@@ -207,15 +207,15 @@ IndexDescr_t<IndexType> DataLoader(const char *filename) {
   return indexDescr; // sorted row index
 }
 
-int generateIndex(int range, int max_seg, int total_count, std::vector<int>& result) {
+template <typename IndexType>
+int generateIndex(int range, int min_seg, int max_seg, int total_count, double cv, std::vector<IndexType>& result) {
     // range: Elements of index `i` in [0, range)
     // max_seg: Maximum repetition `mi` of each element of index `i`
     // avg: Desired average of `mi`
     double avg = static_cast<double>(total_count) / range;
-    result.reserve(total_count);
-
+    result.resize(total_count);
     std::default_random_engine generator;
-    std::normal_distribution<double> distribution(avg, avg/2); // mean max_seg/2, std dev max_seg/4
+    std::normal_distribution<double> distribution(avg, avg * cv); // mean max_seg/2, std dev max_seg/4
 
     int current_sum = 0;
     int dst_len = 0;
@@ -223,18 +223,16 @@ int generateIndex(int range, int max_seg, int total_count, std::vector<int>& res
         int mi = static_cast<int>(std::round(distribution(generator)));
 
         // Ensure mi is within bounds
-        if (mi < 0) mi = 0;
-        if (mi >= max_seg) mi = max_seg - 1;
+        mi = std::max(mi, min_seg);
+        mi = std::min(mi, max_seg);
 
         // Adjust the last element to match the desired total count
         if (i == range - 1) {
             mi = total_count - current_sum;
-            if (mi < 0) mi = 0; // Ensure mi is not negative
-            if (mi >= max_seg) mi = max_seg - 1; // Ensure mi is within bounds
         }
 
         for (int j = 0; j < mi; ++j) {
-            result.push_back(i);
+            result[current_sum + j] = i;
         }
         current_sum += mi;
         if (mi > 0) dst_len += 1;
@@ -242,6 +240,7 @@ int generateIndex(int range, int max_seg, int total_count, std::vector<int>& res
         // Early exit if we reached the total count
         if (current_sum >= total_count) break;
     }
+    std::cout << "range = " << range << ", nnz = " << total_count << ", max_seg = " << max_seg << " cv = " << cv << ", dst_len = " << dst_len << std::endl;
     return dst_len;
 }
 
