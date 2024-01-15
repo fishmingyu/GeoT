@@ -66,16 +66,17 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
     dst_lanes[i] = dst + nid + i * NThreadX;
   }
 
-  int prev_key = nz_start == 0 ? -1 : index[nz_start - 1];
-  int start_key = index[nz_start];
-  int end_key = index[nz_start + NnzPerThread - 1];
+  int prev_key = (nz_start - 1 >= 0 && nz_start - 1 < nnz) ? index[nz_start - 1] : -1;
+  int suf_key = (nz_start + NnzPerThread >= 0 && nz_start + NnzPerThread < nnz) ? index[nz_start + NnzPerThread] : -1;
+  int start_key = nz_start < nnz ? index[nz_start] : -1;
   int curr_key = start_key;
   int src_index = nz_start;
-  bool atomic_start = (start_key == prev_key);
 // initialize with first value
+  if (nz_start < nnz) {
 #pragma unroll
-  for (int i = 0; i < N_mask; i++) {
-    o[i] = src_lanes[i][nz_start * N];
+    for (int i = 0; i < N_mask; i++) {
+      o[i] = src_lanes[i][nz_start * N];
+    }
   }
 
 #pragma unroll
@@ -86,7 +87,7 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
     }
     int next_key = index[src_index];
     if (next_key != curr_key) {
-      if (curr_key == start_key && atomic_start) {
+      if (curr_key == start_key && curr_key == prev_key) {
 #pragma unroll
         for (int i = 0; i < N_mask; i++) {
           atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
@@ -109,9 +110,18 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
       }
     }
   }
+  if (nz_start < nnz) {
+    if (curr_key == suf_key) {
 #pragma unroll
-  for (int i = 0; i < N_mask; i++) {
-    atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
+      for (int i = 0; i < N_mask; i++) {
+        atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
+      }
+    } else {
+#pragma unroll
+      for (int i = 0; i < N_mask; i++) {
+        dst_lanes[i][curr_key * N] += o[i];
+      }
+    }
   }
   return;
 }
