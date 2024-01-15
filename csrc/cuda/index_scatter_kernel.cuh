@@ -39,106 +39,76 @@ __global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
   }
 }
 
-template <typename ValueType, typename IndexType, int CoarsenFactor,
-          int ThreadNz, int DtileSize>
-__global__ void segscan_sr_sorted_kernel(const ValueType *src,
-                                         const IndexType *index, const int nnz,
-                                         const int N, ValueType *dst) {
-  int Dtile_id = threadIdx.x / DtileSize;
-  int lane_id = threadIdx.x % DtileSize;
+template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+__global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
+                                         const ValueType *src,
+                                         const int64_t *index, ValueType *dst) {
+  int lane_id = threadIdx.x;
+  int nnz_id = threadIdx.y;
+  int nnz_group_id = blockIdx.y;
+  int n_group_id = blockIdx.x;
+  int nid = n_group_id * NThreadX * NPerThread + lane_id;
+  int nz_start = (nnz_group_id * NnzThreadY + nnz_id) * NnzPerThread;
 
-  int nz_start = (blockIdx.y * blockDim.y + threadIdx.y) * ThreadNz;
+  const ValueType *src_lanes[NPerThread];
+  ValueType *dst_lanes[NPerThread];
 
-  IndexType rowids[ThreadNz];
-  IndexType colids[ThreadNz];
-  ValueType data[ThreadNz];
+  ValueType o[NPerThread] = {0};
 
-  int col_offset = blockIdx.x * blockDim.x * CoarsenFactor +
-                   Dtile_id * DtileSize * CoarsenFactor + lane_id;
-  const ValueType *src_lanes[CoarsenFactor];
-  ValueType *dst_lanes[CoarsenFactor];
-
-  int ldsrc = N;
-  int lddst = N;
-
-  ValueType o[CoarsenFactor] = {0};
-  int stride = gridDim.y * blockDim.y * ThreadNz;
-
-  int valid_lane_num = min(CEIL(N - col_offset, DtileSize), CoarsenFactor);
-  if (valid_lane_num == 0)
-    return;
+  int N_mask =
+      min(N - nid, NPerThread); // don't return, it will cause warp divergence
 
 #pragma unroll
-  for (int i = 0; i < valid_lane_num; i++) {
-    src_lanes[i] = src + col_offset + i * DtileSize;
-    dst_lanes[i] = dst + col_offset + i * DtileSize;
+  for (int i = 0; i < N_mask; i++) { // reorder
+    src_lanes[i] = src + nid + i * NThreadX;
+    dst_lanes[i] = dst + nid + i * NThreadX;
   }
 
-  int thread_nz_id;
-  IndexType k, curr_row, next_row, start_row, end_row;
-  ValueType v;
-  for (; nz_start < nnz; nz_start += stride) {
-    for (int g = 0; g < ThreadNz; g++) {
-      thread_nz_id = nz_start + g;
-      if (thread_nz_id < nnz) {
-        rowids[g] = index[thread_nz_id];
-        colids[g] = thread_nz_id;
-        data[g] = (ValueType)1;
-      } else {
-        rowids[g] = nnz - thread_nz_id - 1;
-        colids[g] = 0;
-        data[g] = (ValueType)0;
-      }
-    }
-    start_row = rowids[0];
-    end_row = rowids[ThreadNz - 1];
-    curr_row = rowids[0];
-    k = colids[0];
-    v = data[0];
+  int start_key = index[nz_start];
+  int end_key = index[nz_start + NnzPerThread - 1];
+  int curr_key = start_key;
+  int src_index = nz_start;
 // initialize with first value
 #pragma unroll
-    for (int i = 0; i < valid_lane_num; i++) {
-      o[i] = src_lanes[i][k * ldsrc] * v;
-    }
+  for (int i = 0; i < N_mask; i++) {
+    o[i] = src_lanes[i][nz_start * N];
+  }
 
 #pragma unroll
-    for (int pp = 1; pp < ThreadNz; pp++) {
-      next_row = rowids[pp];
-      if (next_row < 0) {
-        break;
-      }
-      if (next_row != curr_row) {
-        if (curr_row == start_row || curr_row == end_row) {
+  for (int pp = 1; pp < NnzPerThread; pp++) {
+    src_index = nz_start + pp;
+    if (src_index >= nnz) {
+      break;
+    }
+    int next_key = index[src_index];
+    if (next_key != curr_key) {
+      if (curr_key == start_key || curr_key == end_key) {
 #pragma unroll
-          for (int i = 0; i < valid_lane_num; i++) {
-            atomicAdd(dst_lanes[i] + curr_row * lddst, o[i]);
-          }
-        } else {
-#pragma unroll
-          for (int i = 0; i < valid_lane_num; i++) {
-            dst_lanes[i][curr_row * lddst] += o[i];
-          }
-        }
-        curr_row = next_row;
-        k = colids[pp];
-        v = data[pp];
-#pragma unroll
-        for (int i = 0; i < valid_lane_num; i++) {
-          o[i] = v * src_lanes[i][k * ldsrc];
+        for (int i = 0; i < N_mask; i++) {
+          atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
         }
       } else {
-        k = colids[pp];
-        v = data[pp];
 #pragma unroll
-        for (int i = 0; i < valid_lane_num; i++) {
-          o[i] += v * src_lanes[i][k * ldsrc];
+        for (int i = 0; i < N_mask; i++) {
+          dst_lanes[i][curr_key * N] += o[i];
         }
       }
-    }
+      curr_key = next_key;
 #pragma unroll
-    for (int i = 0; i < valid_lane_num; i++) {
-      atomicAdd(dst_lanes[i] + curr_row * lddst, o[i]);
+      for (int i = 0; i < N_mask; i++) {
+        o[i] = src_lanes[i][src_index * N];
+      }
+    } else {
+#pragma unroll
+      for (int i = 0; i < N_mask; i++) {
+        o[i] += src_lanes[i][src_index * N];
+      }
     }
+  }
+#pragma unroll
+  for (int i = 0; i < N_mask; i++) {
+    atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
   }
   return;
 }
