@@ -6,7 +6,10 @@
 #include <ATen/cuda/detail/IndexUtils.cuh>
 #include <ATen/cuda/detail/TensorInfo.cuh>
 
-#define NE_PER_BLOCK 32
+#define CoarsenFactor 2
+#define DtileSize 8
+#define ThreadNz 4
+#define BlockDimY 16
 
 using namespace at::native;
 
@@ -19,10 +22,16 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
   auto indices = index.data_ptr<int64_t>();
   auto src_data = src.data_ptr<scalar_t>();
   auto dst_data = dst.data_ptr<scalar_t>();
-  const int threads = nv;
-  const int blocks = (nnz + NE_PER_BLOCK - 1) / NE_PER_BLOCK;
 
-  index_scatter_sorted_kernel<scalar_t, reduce, NE_PER_BLOCK>
+  int coarsen_factor = min(CoarsenFactor, 4);
+  int real_blockDimX = DtileSize;
+  int real_blockDimY = BlockDimY;
+
+  dim3 gridDim(CEIL(N, real_blockDimX * CoarsenFactor),
+               CEIL(nnz, real_blockDimY * ThreadNz), 1);
+  dim3 blockDim(real_blockDimX, real_blockDimY, 1);
+
+  index_scatter_sorted_kernel<scalar_t, CoarsenFactor, NE_PER_BLOCK>
       <<<blocks, threads>>>(nnz, nv, indices, src_data, dst_data);
 }
 

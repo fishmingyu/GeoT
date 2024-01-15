@@ -12,33 +12,31 @@
 __global__ void warm_up() {}
 
 // policy listed in template
-template <typename ValueType, typename IndexType, int CoarsenFactor,
-          int ThreadNz, int DtileSize, int DtileNum, int BlockDimY>
+template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
 void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   // restriction
-  int coarsen_factor = min(CoarsenFactor, 4);
-  int real_blockDimX =
-      min(DtileNum, CEIL(N, DtileSize * CoarsenFactor)) * DtileSize;
-  int real_blockDimY = min(BlockDimY, CEIL(nnz, ThreadNz));
+  int blockDimX = NThreadX;
+  int blockDimY = NnzThreadY;
 
-  dim3 gridDim(CEIL(N, real_blockDimX * CoarsenFactor),
-               CEIL(nnz, real_blockDimY * ThreadNz), 1);
-  dim3 blockDim(real_blockDimX, real_blockDimY, 1);
+  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
+               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 blockDim(blockDimX, blockDimY, 1);
 
-  segscan_sr_sorted_kernel<ValueType, IndexType, CoarsenFactor, ThreadNz,
-                           DtileSize><<<gridDim, blockDim>>>(
-      src.d_array.get(), index.d_array.get(), nnz, N, dst.d_array.get());
+  segscan_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
+                           NnzThreadY><<<gridDim, blockDim>>>(
+      nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
-template <typename ValueType, typename IndexType>
-void check(int nnz, int N, int keys, util::RamArray<IndexType> &index,
+template <typename ValueType>
+void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
            util::RamArray<ValueType> &src, util::RamArray<ValueType> &dst) {
   dst.tocpu();
   src.tocpu();
   index.tocpu();
-  util::checkSegScan<ValueType, IndexType>(dst.h_array.get(), src.h_array.get(),
-                                           index.h_array.get(), nnz, N, keys);
+  util::checkSegScan<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
+                                         index.h_array.get(), nnz, N, keys);
 }
 
 int main(int argc, char **argv) {
@@ -90,8 +88,8 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 1000; i++)
     warm_up<<<1, 1>>>();
 
-  segscan_sr_sorted<DType, Index, 2, 4, 8, 2, 16>(
-      nnz, feature_size, sp_indices, src, dst);
-  check<DType, Index>(nnz, feature_size, keys, sp_indices, src, dst);
+  segscan_sr_sorted<DType, 2, 16, 32, 2>(nnz, feature_size,
+                                         sp_indices, src, dst);
+  check<DType>(nnz, feature_size, keys, sp_indices, src, dst);
   return 0;
 }
