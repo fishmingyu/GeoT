@@ -6,11 +6,6 @@
 #include <ATen/cuda/detail/IndexUtils.cuh>
 #include <ATen/cuda/detail/TensorInfo.cuh>
 
-#define CoarsenFactor 2
-#define DtileSize 8
-#define ThreadNz 4
-#define BlockDimY 16
-
 using namespace at::native;
 
 template <typename scalar_t, ReductionType reduce>
@@ -18,21 +13,25 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
                                   const at::Tensor &src,
                                   const at::Tensor &dst) {
   const auto nnz = index.numel();
-  const auto nv = src.numel() / nnz;
+  const auto N = src.numel() / nnz;
   auto indices = index.data_ptr<int64_t>();
   auto src_data = src.data_ptr<scalar_t>();
   auto dst_data = dst.data_ptr<scalar_t>();
 
-  int coarsen_factor = min(CoarsenFactor, 4);
-  int real_blockDimX = DtileSize;
-  int real_blockDimY = BlockDimY;
+  int NPerThread = 2;
+  int NThreadX = 16;
+  int NnzPerThread = 32;
+  int NnzThreadY = 2;
 
-  dim3 gridDim(CEIL(N, real_blockDimX * CoarsenFactor),
-               CEIL(nnz, real_blockDimY * ThreadNz), 1);
-  dim3 blockDim(real_blockDimX, real_blockDimY, 1);
+  int blockDimX = NThreadX;
+  int blockDimY = NnzThreadY;
 
-  index_scatter_sorted_kernel<scalar_t, CoarsenFactor, NE_PER_BLOCK>
-      <<<blocks, threads>>>(nnz, nv, indices, src_data, dst_data);
+  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
+               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 blockDim(blockDimX, blockDimY, 1);
+
+  segscan_sr_sorted_kernel<scalar_t, 2, 16, 32, 2>
+      <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
 
 void index_scatter_sorted_dispatch(const at::Tensor &index,
