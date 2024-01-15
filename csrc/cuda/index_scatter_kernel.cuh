@@ -56,8 +56,9 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
 
   ValueType o[NPerThread] = {0};
 
-  int N_mask =
-      min(N - nid, NPerThread); // don't return, it will cause warp divergence
+  // int N_mask =
+  //     min(N - nid, NPerThread); // don't return, it will cause warp divergence
+  int N_mask = min(CEIL(N - nid, NThreadX), NPerThread);
 
 #pragma unroll
   for (int i = 0; i < N_mask; i++) { // reorder
