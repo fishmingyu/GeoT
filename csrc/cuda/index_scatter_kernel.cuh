@@ -12,8 +12,8 @@ using namespace cooperative_groups;
 
 template <typename scalar_t, ReductionType reduce, int ne_block>
 __global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
-                                            const int64_t *indices,
                                             const scalar_t *src,
+                                            const int64_t *indices,
                                             scalar_t *dst) {
   int eid = blockDim.x * blockIdx.x;
   int vid = threadIdx.x;
@@ -38,6 +38,99 @@ __global__ void index_scatter_sorted_kernel(const int64_t nnz, const int64_t nv,
     atomicAdd(&dst[curr_row * nv + vid], val);
   }
 }
+/*
+NPerThread: ILP for N, coarsen
+NThreadX=NTLP: TLP for N, thread parallel
+NnzPerThread: ILP for Nnz, coarsen
+NnzThreadY=NnzTLP: TLP for Nnz
+RSync: sync threads group
+*/
+template <typename ValueType, int NThreadX, int NPerThread, int NnzThreadY,
+          int NnzPerThread, int RSync>
+__global__ void segscan_pr_sorted_kernel(const int nnz, const int N,
+                                         const ValueType *src,
+                                         const int64_t *index, ValueType *dst) {
+  int lane_id = (threadIdx.x % NThreadX);
+  int Nnz_tile_id = blockIdx.x * blockDim.y + threadIdx.y;
+  int nz_start = Nnz_tile_id * NThreadX;
+  // do NnzPerThread for loop in X dim Nnz
+  int stride = NnzPerThread * blockDim.x / NThreadX;
+
+  int nid = (blockIdx.y * NThreadX + threadIdx.x / NThreadX) * NPerThread;
+  const ValueType *src_panel = src + nid;
+  ValueType *dst_panel = dst + nid;
+
+  int64_t k;
+  ValueType v;
+  ValueType o[NPerThread] = {0};
+  thread_block_tile<RSync, thread_block> group =
+      tiled_partition<RSync>(this_thread_block());
+
+  int N_mask = min(N - nid, NPerThread);
+
+  for (int nz_id = nz_start + lane_id; nz_id < nnz + lane_id; nz_id += stride) {
+    int64_t row = index[nz_id];
+    if (nz_id < nnz) {
+      k = nz_id;        // Feature is sorted
+      v = (ValueType)1; // value is set to 1
+    } else {
+      k = nnz - 1;
+      v = (ValueType)0;
+    }
+
+#pragma unroll
+    for (int i = 0; i < N_mask; i++) {
+      o[i] = src_panel[k * N] * v;
+    }
+
+    int row_intv = group.shfl(row, group.size() - 1) - group.shfl(row, 0);
+    // all nnzs in a group are the same
+    if (row_intv == 0) {
+#pragma unroll
+      for (int i = 0; i < N_mask; i++) {
+        for (int k = group.size() >> 1; k > 0; k >>= 1) {
+          o[i] += group.shfl_down(o[i], k);
+        }
+      }
+      if (group.thread_rank() == 0) {
+#pragma unroll
+        for (int i = 0; i < N_mask; i++) {
+          atomicAdd(dst_panel + row * N + i, o[i]);
+        }
+      }
+    } else {
+      bool is_seg_start =
+          ((group.shfl_up(row, 1) != row) || (group.thread_rank() == 0));
+      ValueType tmpv;
+      int64_t tmpr;
+#pragma unroll
+      for (int i = 0; i < N_mask; i++) {
+        for (k = 1; k < group.size(); k = k << 1) {
+          tmpv = group.shfl_down(o[i], k);
+          tmpr = group.shfl_down(row, k);
+          if (tmpr == row && group.thread_rank() < (group.size() - k)) {
+            o[i] += tmpv;
+          }
+        }
+      }
+      if (is_seg_start) {
+#pragma unroll
+        for (int i = 0; i < N_mask; i++) {
+          atomicAdd(dst_panel + row * N + i, o[i]);
+        }
+      }
+    }
+  }
+  return;
+}
+
+/*
+NPerThread: ILP for N, coarsen
+NThreadX=NTLP: TLP for N, thread parallel
+NnzPerThread: ILP for Nnz, coarsen
+NnzThreadY=NnzTLP: TLP for Nnz
+RSync: sync threads group = 1
+*/
 
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
@@ -56,9 +149,8 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
 
   ValueType o[NPerThread] = {0};
 
-  // int N_mask =
-  //     min(N - nid, NPerThread); // don't return, it will cause warp divergence
-  int N_mask = min(CEIL(N - nid, NThreadX), NPerThread);
+  int N_mask = min(CEIL(N - nid, NThreadX),
+                   NPerThread); // don't return, it will cause warp divergence
 
 #pragma unroll
   for (int i = 0; i < N_mask; i++) { // reorder
@@ -66,17 +158,14 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
     dst_lanes[i] = dst + nid + i * NThreadX;
   }
 
-  int prev_key = (nz_start - 1 >= 0 && nz_start - 1 < nnz) ? index[nz_start - 1] : -1;
-  int suf_key = (nz_start + NnzPerThread >= 0 && nz_start + NnzPerThread < nnz) ? index[nz_start + NnzPerThread] : -1;
-  int start_key = nz_start < nnz ? index[nz_start] : -1;
+  int start_key = index[nz_start];
+  int end_key = index[nz_start + NnzPerThread - 1];
   int curr_key = start_key;
   int src_index = nz_start;
 // initialize with first value
-  if (nz_start < nnz) {
 #pragma unroll
-    for (int i = 0; i < N_mask; i++) {
-      o[i] = src_lanes[i][nz_start * N];
-    }
+  for (int i = 0; i < N_mask; i++) {
+    o[i] = src_lanes[i][nz_start * N];
   }
 
 #pragma unroll
@@ -87,7 +176,7 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
     }
     int next_key = index[src_index];
     if (next_key != curr_key) {
-      if (curr_key == start_key && curr_key == prev_key) {
+      if (curr_key == start_key || curr_key == end_key) {
 #pragma unroll
         for (int i = 0; i < N_mask; i++) {
           atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
@@ -110,18 +199,9 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
       }
     }
   }
-  if (nz_start < nnz) {
-    if (curr_key == suf_key) {
 #pragma unroll
-      for (int i = 0; i < N_mask; i++) {
-        atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
-      }
-    } else {
-#pragma unroll
-      for (int i = 0; i < N_mask; i++) {
-        dst_lanes[i][curr_key * N] += o[i];
-      }
-    }
+  for (int i = 0; i < N_mask; i++) {
+    atomicAdd(dst_lanes[i] + curr_key * N, o[i]);
   }
   return;
 }
