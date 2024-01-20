@@ -31,7 +31,7 @@ void index_scatter_sorted(const at::Tensor &self, const at::Tensor &index,
 
   // const int64_t M = ensure_nonempty_size(self, 0);
   const int64_t nnz = ensure_nonempty_size(index, 0);
-  const int64_t K = index.numel() / nnz;
+  const int64_t K = src.numel() / nnz;
 
   int num_threads = at::get_num_threads();
   std::vector<int64_t> num_uniq(num_threads, 0);
