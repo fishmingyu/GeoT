@@ -52,8 +52,8 @@ __global__ void segscan_pr_sorted_kernel(const int nnz, const int N,
                                          const int64_t *index, ValueType *dst) {
   int lane_id = (threadIdx.x % RSync);
   int Nnz_tile_id = blockIdx.x * RNum + threadIdx.x / RSync;
-  int stride = RSync * RNum;
-  int nz_start = Nnz_tile_id * RSync;
+  int stride = RSync;
+  int nz_start = Nnz_tile_id * RSync * NnzPerThread;
   // do NnzPerThread for loop in X dim Nnz
 
   int nid = blockIdx.y * NThreadY * NPerThread + threadIdx.y * NPerThread;
