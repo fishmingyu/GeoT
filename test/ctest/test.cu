@@ -29,20 +29,23 @@ void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
-template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
-          int NnzThreadY, int RSync>
+template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
+          int RNum, int RSync>
 void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
-  int BaseX = NThreadX * RSync;
-  int blockDimX = RefBlockDim;
-  int blockDimY = NnzThreadY;
-  int RSyncNum = CEIL(blockDimX, BaseX);
+  int blockDimX = RSync * RNum;
+  int blockDimY = NThreadY;
 
-  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
-               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 gridDim(CEIL(nnz, RSync * RNum * NnzPerThread),
+               CEIL(N, NThreadY * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
-  segscan_pr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
-                           NnzThreadY, RSync><<<gridDim, blockDim>>>(
+
+  printf("nnz: %d, N: %d\n", nnz, N);
+  printf("gridDim: %d, %d, %d\n", gridDim.x, gridDim.y, gridDim.z);
+  printf("blockDim: %d, %d, %d\n", blockDim.x, blockDim.y, blockDim.z);
+
+  segscan_pr_sorted_kernel<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
+                           RSync><<<gridDim, blockDim>>>(
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
@@ -88,6 +91,10 @@ int main(int argc, char **argv) {
 
   segscan_sr_sorted<DType, 2, 16, 32, 2>(nnz, feature_size,
                                          indexDescr.sp_indices, src, dst);
+  check<DType>(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
+  dst.reset();
+  segscan_pr_sorted<DType, 2, 2, 2, 2, 32>(nnz, feature_size,
+                                           indexDescr.sp_indices, src, dst);
   check<DType>(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
   return 0;
 }
