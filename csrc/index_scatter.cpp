@@ -7,7 +7,7 @@
 
 // this kernel take a sorted index tensor and scatter the src tensor
 // index is a 1D tensor of size nnz
-
+// currently only support reduce = "sum" and sorted = true
 at::Tensor index_scatter_cpu_impl(const int64_t dim, at::Tensor index,
                                   at::Tensor src, const c10::string_view reduce,
                                   const bool sorted) {

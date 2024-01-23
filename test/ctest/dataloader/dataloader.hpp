@@ -11,48 +11,54 @@
 #include <cusparse.h>
 #include <iostream>
 #include <math.h>
+#include <random>
 #include <stdio.h>
 #include <stdlib.h>
 #include <tuple>
 #include <typeinfo>
 #include <vector>
-#include <random>
 
 template <typename IndexType>
-int generateIndex(int range, int min_seg, int max_seg, int total_count, double cv, std::vector<IndexType>& result) {
-    // range: Elements of index `i` in [0, range)
-    // max_seg: Maximum repetition `mi` of each element of index `i`
-    // avg: Desired average of `mi`
-    double avg = static_cast<double>(total_count) / range;
-    result.resize(total_count);
-    std::default_random_engine generator;
-    std::normal_distribution<double> distribution(avg, avg * cv); // mean max_seg/2, std dev max_seg/4
+int generateIndex(int range, int min_seg, int max_seg, int total_count,
+                  double cv, std::vector<IndexType> &result) {
+  // range: Elements of index `i` in [0, range)
+  // max_seg: Maximum repetition `mi` of each element of index `i`
+  // avg: Desired average of `mi`
+  double avg = static_cast<double>(total_count) / range;
+  result.resize(total_count);
+  std::default_random_engine generator;
+  std::normal_distribution<double> distribution(
+      avg, avg * cv); // mean max_seg/2, std dev max_seg/4
 
-    int current_sum = 0;
-    int dst_len = 0;
-    for (int i = 0; i < range; ++i) {
-        int mi = static_cast<int>(std::round(distribution(generator)));
+  int current_sum = 0;
+  int dst_len = 0;
+  for (int i = 0; i < range; ++i) {
+    int mi = static_cast<int>(std::round(distribution(generator)));
 
-        // Ensure mi is within bounds
-        mi = std::max(mi, min_seg);
-        mi = std::min(mi, max_seg);
+    // Ensure mi is within bounds
+    mi = std::max(mi, min_seg);
+    mi = std::min(mi, max_seg);
 
-        // Adjust the last element to match the desired total count
-        if (i == range - 1) {
-            mi = total_count - current_sum;
-        }
-
-        for (int j = 0; j < mi; ++j) {
-            result[current_sum + j] = i;
-        }
-        current_sum += mi;
-        if (mi > 0) dst_len += 1;
-
-        // Early exit if we reached the total count
-        if (current_sum >= total_count) break;
+    // Adjust the last element to match the desired total count
+    if (i == range - 1) {
+      mi = total_count - current_sum;
     }
-    std::cout << "range = " << range << ", nnz = " << total_count << ", max_seg = " << max_seg << " cv = " << cv << ", dst_len = " << dst_len << std::endl;
-    return dst_len;
+
+    for (int j = 0; j < mi; ++j) {
+      result[current_sum + j] = i;
+    }
+    current_sum += mi;
+    if (mi > 0)
+      dst_len += 1;
+
+    // Early exit if we reached the total count
+    if (current_sum >= total_count)
+      break;
+  }
+  std::cout << "range = " << range << ", nnz = " << total_count
+            << ", max_seg = " << max_seg << " cv = " << cv
+            << ", dst_len = " << dst_len << std::endl;
+  return dst_len;
 }
 
 // Load sparse matrix from an mtx file. Only non-zero positions are loaded,
@@ -90,12 +96,21 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
       std::cout << "Error: not enough rows in mtx file.\n";
       exit(EXIT_FAILURE);
     } else {
-      fscanf(f, "%d", &col_id);
+      int rev = 0;
+      rev = fscanf(f, "%d", &col_id);
       if (mm_is_integer(matcode) || mm_is_real(matcode)) {
-        fscanf(f, "%f", &dummy);
+        rev = fscanf(f, "%f", &dummy);
+        if (rev == EOF) {
+          std::cout << "Error: not enough values in mtx file.\n";
+          exit(EXIT_FAILURE);
+        }
       } else if (mm_is_complex(matcode)) {
-        fscanf(f, "%f", &dummy);
-        fscanf(f, "%f", &dummy);
+        rev = fscanf(f, "%f", &dummy);
+        rev = fscanf(f, "%f", &dummy);
+        if (rev == EOF) {
+          std::cout << "Error: not enough values in mtx file.\n";
+          exit(EXIT_FAILURE);
+        }
       }
       // mtx format is 1-based
       coords.push_back(std::make_tuple(row_id - 1, col_id - 1));
