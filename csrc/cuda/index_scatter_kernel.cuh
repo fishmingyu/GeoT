@@ -66,12 +66,6 @@ __global__ void segscan_pr_sorted_kernel(const int nnz, const int N,
   thread_block_tile<RSync, thread_block> group =
       tiled_partition<RSync>(this_thread_block());
 
-  // if (blockIdx.x == 1 && blockIdx.y == 1 && threadIdx.y == 0) {
-  //   printf("lane_id: %d, Nnz_tile_id: %d, nz_start: %d, stride: %d, nid:
-  //   %d\n",
-  //          lane_id, Nnz_tile_id, nz_start, stride, nid);
-  // }
-
   int N_mask = min(N - nid, NPerThread);
   int nz_id = nz_start + lane_id;
   for (int nzloop = 0; nzloop < NnzPerThread; nzloop++, nz_id += stride) {
