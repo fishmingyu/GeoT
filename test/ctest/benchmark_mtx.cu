@@ -9,6 +9,7 @@
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
 
+#define ITER 300
 __global__ void warm_up() {}
 
 // policy listed in template
@@ -46,42 +47,94 @@ void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
 }
 
 template <typename ValueType>
-void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
+bool check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
            util::RamArray<ValueType> &src, util::RamArray<ValueType> &dst) {
   dst.tocpu();
   src.tocpu();
   index.tocpu();
-  util::checkSegScan<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
-                                         index.h_array.get(), nnz, N, keys);
+
+  return util::checkSegScan<ValueType, int64_t>(
+      dst.h_array.get(), src.h_array.get(), index.h_array.get(), nnz, N, keys);
 }
 
-// keys is an estimated value since index may not be continuous
-void segscan_sorted(int nnz, int N, int keys, util::RamArray<Index> &index,
-                    util::RamArray<DType> &src, util::RamArray<DType> &dst) {
-  // restriction
-  if (N >= 1 && N <= 4) {
-    segscan_pr_sorted<DType, 1, 1, 2, 4, 32>(nnz, N, index, src, dst);
-  } else if (N > 4 && N < 32) {
-    segscan_pr_sorted<DType, 2, 2, 2, 4, 32>(nnz, N, index, src, dst);
-  } else if (N >= 32 && N < 64) {
-    int avg_key_len = nnz / keys;
-    if (avg_key_len < 16) {
-      segscan_sr_sorted<DType, 2, 16, 32, 1>(nnz, N, index, src, dst);
-    } else if (avg_key_len >= 16 && avg_key_len < 64) {
-      segscan_sr_sorted<DType, 2, 16, 32, 2>(nnz, N, index, src, dst);
-    } else {
-      segscan_sr_sorted<DType, 2, 16, 32, 4>(nnz, N, index, src, dst);
-    }
-  } else {
-    int avg_key_len = nnz / keys;
-    if (avg_key_len < 16) {
-      segscan_sr_sorted<DType, 2, 32, 32, 1>(nnz, N, index, src, dst);
-    } else if (avg_key_len >= 16 && avg_key_len < 64) {
-      segscan_sr_sorted<DType, 2, 32, 32, 2>(nnz, N, index, src, dst);
-    } else {
-      segscan_sr_sorted<DType, 2, 32, 32, 4>(nnz, N, index, src, dst);
-    }
+template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
+                      util::RamArray<DType> &src, util::RamArray<DType> &dst) {
+  if (NPerThread * NThreadX > N) {
+    printf("invalid NPerThread * NThreadX > N\n");
+    return 0;
   }
+  dst.reset();
+  segscan_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread, NnzThreadY>(
+      nnz, N, index, src, dst);
+
+  if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
+    printf("segscan_sr_sorted failed\n");
+    return 0;
+  }
+
+  util::gpuTimer timer;
+  timer.start();
+  for (int i = 0; i < ITER; i++)
+    segscan_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread,
+                      NnzThreadY>(nnz, N, index, src, dst);
+  timer.end();
+  return timer.elapsed() / ITER;
+}
+
+template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
+          int RNum, int RSync>
+float segscan_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
+                      util::RamArray<DType> &src, util::RamArray<DType> &dst) {
+
+  if (NPerThread * NThreadY > N) {
+    printf("invalid NPerThread * NThreadY > N\n");
+    return 0;
+  }
+  dst.reset();
+  segscan_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum, RSync>(
+      nnz, N, index, src, dst);
+
+  if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
+    printf("segscan_pr_sorted failed\n");
+    return 0;
+  }
+
+  util::gpuTimer timer;
+  timer.start();
+  for (int i = 0; i < ITER; i++)
+    segscan_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
+                      RSync>(nnz, N, index, src, dst);
+  timer.end();
+  return timer.elapsed() / ITER;
+}
+
+template <typename ValueType>
+void segscan_sr_tune(int nnz, int N, int keys, util::RamArray<Index> &index,
+                     util::RamArray<DType> &src, util::RamArray<DType> &dst) {
+  float time = 0;
+  time =
+      segscan_sr_test<ValueType, 1, 32, 32, 1>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 1, 32, 32, 1, time);
+  time =
+      segscan_sr_test<ValueType, 1, 32, 64, 1>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 1, 32, 64, 1, time);
+  time =
+      segscan_sr_test<ValueType, 1, 32, 32, 2>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 1, 32, 32, 2, time);
+  time =
+      segscan_sr_test<ValueType, 1, 32, 64, 2>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 1, 32, 64, 2, time);
+  time =
+      segscan_sr_test<ValueType, 2, 32, 32, 1>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 2, 32, 32, 1, time);
+  time =
+      segscan_sr_test<ValueType, 2, 32, 64, 1>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 2, 32, 64, 1, time);
+  time =
+      segscan_sr_test<ValueType, 2, 32, 32, 2>(nnz, N, keys, index, src, dst);
+  printf("segscan_sr_sorted<%d, %d, %d, %d> time: %f ms\n", 2, 32, 32, 2, time);
 }
 
 int main(int argc, char **argv) {
@@ -114,7 +167,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 1000; i++)
     warm_up<<<1, 1>>>();
 
-  segscan_sorted(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
-  check<DType>(nnz, feature_size, keys, indexDescr.sp_indices, src, dst);
+  segscan_sr_tune<DType>(nnz, feature_size, keys, indexDescr.sp_indices, src,
+                         dst);
   return 0;
 }

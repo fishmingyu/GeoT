@@ -87,7 +87,7 @@ void segment_coo_sequencial(const ValueType *src, const IndexType *index,
 }
 
 template <typename ValueType, typename IndexType>
-void checkSegScan(ValueType *dst, ValueType *src, IndexType *index, int nnz,
+bool checkSegScan(ValueType *dst, ValueType *src, IndexType *index, int nnz,
                   int N, int dst_len) {
   std::vector<ValueType> dst_cpu(dst_len * N, 0);
   segment_coo_sequencial<ValueType, IndexType>(src, index, nnz, N, dst_len,
@@ -97,10 +97,11 @@ void checkSegScan(ValueType *dst, ValueType *src, IndexType *index, int nnz,
     if (fabs(dst[i] - dst_cpu[i]) > 1e-2 * fabs(dst_cpu[i])) {
       printf("Error[%d][%d]: dst = %f, dst_cpu = %f\n", i / N, i % N, dst[i],
              dst_cpu[i]);
-      return;
+      return false;
     }
   }
   printf("Check passed!\n");
+  return true;
 }
 
 template <typename T>
