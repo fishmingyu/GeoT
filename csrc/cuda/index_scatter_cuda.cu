@@ -62,12 +62,12 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
   const auto nnz = index.numel();
   const auto N = src.numel() / nnz;
   const auto keys = dst.numel() / N;
+  int avg_key_len = nnz / keys;
   if (N >= 1 && N <= 4) {
     segscan_pr_sorted<scalar_t, 1, 1, 2, 4, 32>(index, src, dst);
   } else if (N > 4 && N < 32) {
     segscan_pr_sorted<scalar_t, 2, 2, 2, 4, 32>(index, src, dst);
   } else if (N >= 32 && N < 64) {
-    int avg_key_len = nnz / keys;
     if (avg_key_len < 16) {
       segscan_sr_sorted<scalar_t, 2, 16, 32, 1>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
@@ -77,19 +77,19 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
     }
   } else if (N >= 64 && N < 128) {
     if (avg_key_len < 16) {
-      segscan_sr_sorted<DType, 2, 32, 32, 1>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 32, 32, 1>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
-      segscan_sr_sorted<DType, 2, 32, 32, 2>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 32, 32, 2>(index, src, dst);
     } else {
-      segscan_sr_sorted<DType, 2, 32, 32, 4>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 32, 32, 4>(index, src, dst);
     }
   } else {
     if (avg_key_len < 16) {
-      segscan_sr_sorted<DType, 2, 64, 32, 1>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 64, 32, 1>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
-      segscan_sr_sorted<DType, 2, 64, 32, 2>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 64, 32, 2>(index, src, dst);
     } else {
-      segscan_sr_sorted<DType, 2, 64, 32, 4>(nnz, N, index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 64, 32, 4>(index, src, dst);
     }
   }
 }
