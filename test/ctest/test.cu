@@ -45,6 +45,23 @@ void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
+template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+void gather_eb_sorted(int nnz, int N, util::RamArray<Index> &index,
+                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
+  // restriction
+  int blockDimX = NThreadX;
+  int blockDimY = NnzThreadY;
+
+  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
+               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 blockDim(blockDimX, blockDimY, 1);
+
+  gather_eb_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
+                           NnzThreadY><<<gridDim, blockDim>>>(
+      nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
+}
+
 template <typename ValueType>
 void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
            util::RamArray<ValueType> &src, util::RamArray<ValueType> &dst) {
@@ -54,6 +71,17 @@ void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
   util::checkSegScan<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
                                          index.h_array.get(), nnz, N, keys);
 }
+
+template <typename ValueType>
+void check_bwd(int nnz, int N, int keys, util::RamArray<int64_t> &index,
+           util::RamArray<ValueType> &src, util::RamArray<ValueType> &dst) {
+  dst.tocpu();
+  src.tocpu();
+  index.tocpu();
+  util::checkGather<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
+                                         index.h_array.get(), nnz, N, keys);
+}
+
 
 int main(int argc, char **argv) {
   int range, nnz_in, feature_size, max_seg, min_seg;
@@ -115,5 +143,10 @@ int main(int argc, char **argv) {
   segscan_pr_sorted<DType, 2, 2, 2, 2, 32>(nnz, feature_size, sp_indices, src,
                                            dst);
   check<DType>(nnz, feature_size, keys, sp_indices, src, dst);
+  src.reset();
+  gather_eb_sorted<DType, 2, 16, 32, 2>(nnz, feature_size, sp_indices, dst,
+                                        src);
+  check_bwd<DType>(nnz, feature_size, keys, sp_indices, dst, src);
+
   return 0;
 }

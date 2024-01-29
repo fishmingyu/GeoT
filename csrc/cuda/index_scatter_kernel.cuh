@@ -219,3 +219,54 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
   }
   return;
 }
+
+template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+__global__ void gather_eb_sorted_kernel(const int nnz, const int N,
+                                        const ValueType *src,
+                                        const int64_t *index, ValueType *dst) {
+
+  int lane_id = threadIdx.x;
+  int nnz_id = threadIdx.y;
+  int nnz_group_id = blockIdx.y;
+  int n_group_id = blockIdx.x;
+  int nid = n_group_id * NThreadX * NPerThread + lane_id;
+  int nz_start = (nnz_group_id * NnzThreadY + nnz_id) * NnzPerThread;
+
+  const ValueType *src_lanes[NPerThread];
+  ValueType *dst_lanes[NPerThread];
+
+  ValueType o[NPerThread] = {0};
+
+  int N_mask = min(CEIL(N - nid, NThreadX), NPerThread);
+
+#pragma unroll
+  for (int i = 0; i < N_mask; i++) { // reorder
+    src_lanes[i] = src + nid + i * NThreadX;
+    dst_lanes[i] = dst + nid + i * NThreadX;
+  }
+
+  int curr_key = -1;
+  int dst_index = nz_start;
+
+#pragma unroll
+  for (int pp = 0; pp < NnzPerThread; pp++) {
+    dst_index = nz_start + pp;
+    if (dst_index >= nnz) {
+      break;
+    }
+    int next_key = index[dst_index];
+    if (next_key != curr_key) {
+      #pragma unroll
+      for (int i = 0; i < N_mask; i++) {
+        o[i] = src_lanes[i][next_key * N];
+      }
+      curr_key = next_key;
+    }
+    #pragma unroll
+    for (int i = 0; i < N_mask; i++) {
+      dst_lanes[i][dst_index * N] = o[i];
+    }
+  }
+  return;
+}
