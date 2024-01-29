@@ -1,8 +1,8 @@
 #include "../../csrc/cuda/index_scatter_kernel.cuh"
-#include "./dataloader/dataloader.hpp"
-#include "./util/check.cuh"
-#include "./util/gpuTimer.cuh"
-#include "./util/ramArray.cuh"
+#include "../../csrc/dataloader/dataloader.hpp"
+#include "../../csrc/util/check.cuh"
+#include "../../csrc/util/gpuTimer.cuh"
+#include "../../csrc/util/ramArray.cuh"
 
 #include <cuda_runtime_api.h> // cudaMalloc, cudaMemcpy, etc.
 #include <fstream>
