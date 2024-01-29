@@ -2,7 +2,6 @@
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#include <cusparse.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
