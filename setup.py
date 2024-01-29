@@ -74,6 +74,11 @@ def get_extensions():
 
 install_requires = [
     'scipy',
+    'torch>=2.1.0',
+    'torch_scatter',
+    'ogb',
+    'torch_geometric',
+    'rdflib'
 ]
 
 test_requires = [

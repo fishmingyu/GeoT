@@ -13,7 +13,7 @@ NVCC_FLAGS =\
 -gencode arch=compute_86,code=sm_86 \
 -gencode arch=compute_90,code=sm_90
 
-INC = -I./util -I./dataloader -I$(CUDA_HOME)/include
+INC = -I../../csrc/util -I../../csrc/dataloader -I$(CUDA_HOME)/include
 
 all : $(TEST) $(BENCHMARK)
 

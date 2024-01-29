@@ -1,5 +1,5 @@
 #include "../reducetype.h"
-#include "../utils.h"
+#include "../util/utils.h"
 #include <cooperative_groups.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
