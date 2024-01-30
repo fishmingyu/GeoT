@@ -1,7 +1,9 @@
 from torch_geometric import datasets
 import torch
 import torch.nn.functional as F
+from torch_geometric.transforms import FaceToEdge
 # from ogb.nodeproppred import PygNodePropPredDataset
+import numpy as np
 
 class Dataset:
     def __init__(self, name: str, device):
@@ -97,9 +99,6 @@ class Dataset:
         elif self.name == 'bgs':
             dataset = datasets.Entities(root='./data/', name='BGS')
             graph = dataset[0]
-        elif self.name == 'gdelt':
-            dataset = datasets.GDELT(root='./data/GDELT')
-            graph = dataset[0]
         elif self.name == 'wikics':
             dataset = datasets.WikiCS(root='./data/WikiCS')
             graph = dataset[0]
@@ -108,12 +107,6 @@ class Dataset:
             graph = dataset[0]
         elif self.name == 'facebookpagepage':
             dataset = datasets.FacebookPagePage(root='./data/FacebookPagePage')
-            graph = dataset[0]
-        elif self.name == 'modelnet10':
-            dataset = datasets.ModelNet(root='./data/', name='10')
-            graph = dataset[0]
-        elif self.name == 'modelnet40':
-            dataset = datasets.ModelNet(root='./data/', name='40')
             graph = dataset[0]
         elif self.name == 'cornell':
             dataset = datasets.LINKXDataset(root='./data/', name='cornell5')
@@ -125,7 +118,7 @@ class Dataset:
             dataset = datasets.LINKXDataset(root='./data/', name='penn94')
             graph = dataset[0]
         elif self.name == 'reed':
-            dataset == datasets.LINKXDataset(root='./data/', name='reed98')
+            dataset = datasets.LINKXDataset(root='./data/', name='reed98')
             graph = dataset[0]
         elif self.name == 'amherst':
             dataset = datasets.LINKXDataset(root='./data/', name='amherst41')
@@ -134,43 +127,31 @@ class Dataset:
             dataset = datasets.LINKXDataset(root='./data/', name='johnshopkins55')
             graph = dataset[0]
         elif self.name == 'deezereurope':
-            dataset = datasets.deezereurope(root='./data/DeezerEurope')
+            dataset = datasets.DeezerEurope(root='./data/DeezerEurope')
             graph = dataset[0]
         elif self.name == 'myket':
             dataset = datasets.MyketDataset(root='./data/MyketDataset')
             graph = dataset[0]
         elif self.name == 'polblogs':
-            dataset = datasets.Polblogs(root='./data/Polblogs')
-            graph = dataset[0]
-        elif self.name == 'omdb':
-            dataset = datasets.OMDB(root='./data/OMDB')
+            dataset = datasets.PolBlogs(root='./data/PolBlogs')
             graph = dataset[0]
         elif self.name == 'explicitbitcoin':
             dataset = datasets.EllipticBitcoinDataset(root='./data/EllipticBitcoin')
             graph = dataset[0]
         elif self.name == 'gemsecdeezer_hu':
-            dataset = datasets.GemsecDeezer(root='./data/', name='hu')
+            dataset = datasets.GemsecDeezer(root='./data/', name='HU')
             graph = dataset[0]
         elif self.name == 'gemsecdeezer_hr':
-            dataset = datasets.GemsecDeezer(root='./data/', name='hr')
+            dataset = datasets.GemsecDeezer(root='./data/', name='HR')
             graph = dataset[0]
         elif self.name == 'gemsecdeezer_ro':
-            dataset = datasets.GemsecDeezer(root='./data/', name='ro')
+            dataset = datasets.GemsecDeezer(root='./data/', name='RO')
             graph = dataset[0]
         elif self.name == 'mooc':
             dataset = datasets.JODIEDataset(root='./data/', name='MOOC')
             graph = dataset[0]
         elif self.name == 'lastfm':
             dataset = datasets.JODIEDataset(root='./data/', name='LastFM')
-            graph = dataset[0]
-        elif self.name == 'ICEWS18':
-            dataset = datasets.ICEWS18(root='./data/ICEWS18')
-            graph = dataset[0]
-        elif self.name == 'S3DIS':
-            dataset = datasets.S3DIS(root='./data/S3DIS')
-            graph = dataset[0]
-        elif self.name == 'CoMA':
-            dataset = datasets.CoMA(root='./data/CoMA')
             graph = dataset[0]
         elif self.name == 'BrcaTcga':
             dataset = datasets.BrcaTcga(root='./data/BrcaTcga')
@@ -182,10 +163,11 @@ class Dataset:
             dataset = datasets.WikipediaNetwork(root='./data/', name = 'squirrel')
             graph = dataset[0]
         elif self.name == 'crocodile':
-            dataset = datasets.WikipediaNetwork(root='./data/', name = 'crocodile')
+            dataset = datasets.WikipediaNetwork(root='./data/', name = 'crocodile', geom_gcn_preprocess=False)
             graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
+        print("Dataset: ", self.name)
         self.edge_index = graph.edge_index.to(self.device)
         self.num_edges = graph.num_edges
 
@@ -199,14 +181,15 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 'reddit', 
-                    'github',  'yelp', 'amazon_products', 'fb15k_237', 'actor', 'airports_usa', 'airports_brazil',
-                    'airports_europe', 'malnet', 'emaileucore', 'twitch_de', 'twitch_en', 'twitch_es', 'twitch_fr', 
-                    'twitch_pt', 'twitch_ru', 'aifb', 'am', 'mutag', 'bgs', 'gdelt', 'wikics', 'lastfmasia', 
-                    'facebookpagepage', 'modelnet10', 'modelnet40', 'cornell', 'genius', 'penn', 'reed', 'amherst', 
-                    'johnshopkins', 'deezereurope', 'myket', 'polblogs', 'omdb', 'explicitbitcoin', 'gemsecdeezer_hu', 
-                    'gemsecdeezer_hr', 'gemsecdeezer_ro', 'mooc', 'lastfm', 'ICEWS18', 'S3DIS', 'CoMA', 'BrcaTcga', 
-                    'chameleon', 'squirrel', 'crocodile']
+    ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 
+                   'reddit', 'github',  'fb15k_237', 'actor', 'airports_usa', 
+                   'airports_brazil', 'airports_europe', 'malnet', 'emaileucore', 'twitch_de', 'twitch_en', 'twitch_es', 
+                   'twitch_fr', 'twitch_pt', 'twitch_ru', 'aifb', 'am', 'mutag', 'bgs', 'wikics', 'lastfmasia', 
+                   'facebookpagepage',  'cornell', 'genius', 'penn', 'reed', 'amherst', 
+                   'johnshopkins', 'deezereurope', 'myket', 'polblogs', 'explicitbitcoin', 'gemsecdeezer_hu', 
+                   'gemsecdeezer_hr', 'gemsecdeezer_ro', 'mooc', 'lastfm', 'BrcaTcga', 
+                   'chameleon', 'squirrel', 'crocodile']
+
 
     device = "cuda"
     
