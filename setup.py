@@ -78,7 +78,9 @@ install_requires = [
     'torch_scatter',
     'ogb',
     'torch_geometric',
-    'rdflib'
+    'rdflib',
+    'h5py',
+    'pandas'
 ]
 
 test_requires = [
