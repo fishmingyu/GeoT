@@ -9,6 +9,6 @@ parser.add_argument('--destpath', type=str, default="/mnt/data/SuiteSparse")
 args = parser.parse_args()
 
 result = ssgetpy.search(rowbounds=(1000, 10000000), nzbounds=(
-    1000, 100000000),  isspd=False, limit=10000)
-
+    1000, 10000000),  isspd=False, limit=10000)
+print(len(result))
 result.download(destpath=args.destpath, format=args.format, extract=True)
