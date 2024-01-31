@@ -4,11 +4,13 @@ import torch.nn.functional as F
 from torch_geometric.transforms import FaceToEdge
 # from ogb.nodeproppred import PygNodePropPredDataset
 import numpy as np
+import os
 
 class Dataset:
     def __init__(self, name: str, device):
         self.name = name
         self.device = device
+        self.max_exponent = 17
         self.get_dataset()
 
     def get_dataset(self):
@@ -175,10 +177,47 @@ class Dataset:
         sorted_idx = torch.argsort(idx)
         self.idx = idx[sorted_idx]
 
-    def idx_augment(self, idx):
-        sorted_idx = torch.argsort(idx)
-        return idx[sorted_idx]
+    def idx_augment(self):
+        idx_size = self.idx.size(0)
+        base_scale = int(np.floor(np.log2(idx_size / 1000)))
 
+        scale_idx_list = []
+        # for scale in range(1, int(base_scale)), we use down sampling
+        for scale in range(0, int(base_scale)):
+            scale_idx = self.down_sample(self.idx, int(np.power(2, base_scale - scale)))
+            scale_idx_list.append(scale_idx)
+
+        scale_idx_list.append(self.idx)
+        # for scale in range(int(base_scale) + 1, self.max_exponent), we use up sampling
+        for scale in range(int(base_scale) + 1, self.max_exponent):
+            scale_idx = self.up_sample(self.idx, int(np.power(2, scale - base_scale)))
+            scale_idx_list.append(scale_idx)
+
+        return scale_idx_list
+
+    def down_sample(self, input, scale):
+        input_3d = input.unsqueeze(0).unsqueeze(0)
+        input_3d_float = input_3d.type(torch.float32)
+        new_length = round(input.size(0) / scale)
+        down_sampled = F.interpolate(input_3d_float, size=new_length, mode='nearest')
+        down_sampled_1d = down_sampled.squeeze() / scale
+        return torch.round(down_sampled_1d.type(torch.long))
+    
+    def up_sample(self, input, scale):
+        input_3d = input.unsqueeze(0).unsqueeze(0)
+        input_3d_float = input_3d.type(torch.float32)
+        new_length = round(input.size(0) * scale)
+        interpolated = F.interpolate(input_3d_float, size=new_length, mode='linear')
+        interpolated_1d = interpolated.squeeze() * scale
+        return torch.round(interpolated_1d.type(torch.long))
+    
+    def store_aug_idx(self):
+        scale_idx_list = self.idx_augment()
+        os.path.isdir('./idx_data') or os.makedirs('./idx_data')
+        # store the idx via torch
+        for i, scale_idx in enumerate(scale_idx_list):
+            print(f"Scale {i} size: {scale_idx.size()}")
+            torch.save(scale_idx, f'./idx_data/{self.name}_{i}.pt')
 
 if __name__ == '__main__':
     ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 
@@ -190,9 +229,9 @@ if __name__ == '__main__':
                    'gemsecdeezer_hr', 'gemsecdeezer_ro', 'mooc', 'lastfm', 'BrcaTcga', 
                    'chameleon', 'squirrel', 'crocodile']
 
-
     device = "cuda"
     
     for d in ml_datasets:
         data = Dataset(d, device)
         print(d, data.num_edges, data.idx.size())
+        data.store_aug_idx()
