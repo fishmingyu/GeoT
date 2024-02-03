@@ -220,6 +220,7 @@ __global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
   return;
 }
 
+// backward
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 __global__ void gather_eb_sorted_kernel(const int nnz, const int N,

@@ -1,6 +1,6 @@
 import torch
 import torch_index_scatter
-from utils import OgbDataset
+from utils import PyGDataset
 import time
 
 from torch_scatter import scatter
@@ -36,9 +36,8 @@ def timeit(func, iter, *args, **kwargs):
 
 
 def test_index_scatter(dataset, feature_size, device):
-    g = OgbDataset(dataset, device)
+    g = PyGDataset(dataset, device)
     idx = g.idx
-    print(idx.size(0))
     src = torch.rand(idx.size(0), feature_size).to(device)
     # benchmark time
     iter = 100
@@ -49,7 +48,7 @@ def test_index_scatter(dataset, feature_size, device):
 
 
 if __name__ == '__main__':
-    dataset = 'products'
+    dataset = 'pubmed'
     feature_size = 128
     device = "cuda"
     test_index_scatter(dataset, feature_size, device)

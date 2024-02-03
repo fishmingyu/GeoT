@@ -1,16 +1,21 @@
 from torch_geometric import datasets
+from torch_geometric.utils import from_dgl
 import torch
 import torch.nn.functional as F
 from torch_geometric.transforms import FaceToEdge
+import torch_geometric.transforms as T
 # from ogb.nodeproppred import PygNodePropPredDataset
 import numpy as np
 import os
+import dgl
+
 
 class Dataset:
     def __init__(self, name: str, device):
         self.name = name
         self.device = device
-        self.max_exponent = 17
+        self.max_exponent = 12
+        self.noise_aug_num = 5
         self.get_dataset()
 
     def get_dataset(self):
@@ -41,12 +46,14 @@ class Dataset:
         elif self.name == 'github':
             dataset = datasets.GitHub(root='./data/GitHub')
             graph = dataset[0]
-        elif self.name == 'flickr':
-            dataset = datasets.Flickr(root='./data/Flickr')
-            graph = dataset[0]
-        elif self.name == 'yelp':
-            dataset = datasets.Yelp(root='./data/Yelp')
-            graph = dataset[0]
+        elif self.name == 'flickr': # due to PyG's broken link, we use dgl's dataset
+            dataset = dgl.data.FlickrDataset()
+            dgl_g = dataset[0]
+            graph = from_dgl(dgl_g)
+        elif self.name == 'yelp':  # due to PyG's broken link, we use dgl's dataset
+            dataset = dgl.data.YelpDataset()
+            dgl_g = dataset[0]
+            graph = from_dgl(dgl_g)
         elif self.name == 'amazon_products':
             dataset = datasets.AmazonProducts(root='./data/AmazonProducts')
             graph = dataset[0]
@@ -167,6 +174,18 @@ class Dataset:
         elif self.name == 'crocodile':
             dataset = datasets.WikipediaNetwork(root='./data/', name = 'crocodile', geom_gcn_preprocess=False)
             graph = dataset[0]
+        elif self.name == 'faust':
+            pre_transform = T.Compose([T.FaceToEdge(), T.Constant(value=1)])
+            train_dataset = datasets.FAUST('./data/FAUST', True, T.Cartesian(), pre_transform)
+            graph = train_dataset[0]
+        elif self.name == 'modelnet10':
+            pre_transform, transform = T.NormalizeScale(), T.SamplePoints(16384)
+            train_dataset = datasets.ModelNet('./data/ModelNet10', '10', True, transform, pre_transform)
+            graph = train_dataset[0]
+        elif self.name == 'modelnet40':
+            pre_transform, transform = T.NormalizeScale(), T.SamplePoints(16384)
+            train_dataset = datasets.ModelNet('./data/ModelNet40', '40', True, transform, pre_transform)
+            graph = train_dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
         print("Dataset: ", self.name)
@@ -177,23 +196,39 @@ class Dataset:
         sorted_idx = torch.argsort(idx)
         self.idx = idx[sorted_idx]
 
-    def idx_augment(self):
-        idx_size = self.idx.size(0)
-        base_scale = int(np.floor(np.log2(idx_size / 1000)))
+    def idx_augment(self, idx):
+        idx_size = idx.size(0)
+        base_index = int(np.floor(np.log2(idx_size / 1000)))
 
         scale_idx_list = []
-        # for scale in range(1, int(base_scale)), we use down sampling
-        for scale in range(0, int(base_scale)):
-            scale_idx = self.down_sample(self.idx, int(np.power(2, base_scale - scale)))
-            scale_idx_list.append(scale_idx)
-
-        scale_idx_list.append(self.idx)
-        # for scale in range(int(base_scale) + 1, self.max_exponent), we use up sampling
-        for scale in range(int(base_scale) + 1, self.max_exponent):
-            scale_idx = self.up_sample(self.idx, int(np.power(2, scale - base_scale)))
+        for scale in range(self.max_exponent):
+            scale_idx = self.augment_sample(idx, base_index, scale)
             scale_idx_list.append(scale_idx)
 
         return scale_idx_list
+
+
+    def noise_augment(self, idx):
+        torch.random.manual_seed(0)
+        max_idx = idx.max()
+        size = idx.size(0)
+        range = max((size - max_idx) / max_idx, 1)
+        device = idx.device
+        noise = torch.randint(0, int(range), (size,)).to(device)
+        id_noise = (idx + noise).type(torch.long)
+        sorted_idx = torch.argsort(id_noise)
+        return id_noise[sorted_idx]
+
+
+    def augment_sample(self, idx, base_index, target_index):
+        # down sample
+        if target_index < base_index:
+            return self.down_sample(idx, int(np.power(2, base_index - target_index)))
+        elif target_index == base_index:
+            return idx
+        # up sample
+        else:
+            return self.up_sample(idx, int(np.power(2, target_index - base_index)))
 
     def down_sample(self, input, scale):
         input_3d = input.unsqueeze(0).unsqueeze(0)
@@ -212,26 +247,27 @@ class Dataset:
         return torch.round(interpolated_1d.type(torch.long))
     
     def store_aug_idx(self):
-        scale_idx_list = self.idx_augment()
-        os.path.isdir('./idx_data') or os.makedirs('./idx_data')
-        # store the idx via torch
-        for i, scale_idx in enumerate(scale_idx_list):
-            print(f"Scale {i} size: {scale_idx.size()}")
-            torch.save(scale_idx, f'./idx_data/{self.name}_{i}.pt')
+        # check if the directory exists
+        if not os.path.exists('./idx_data'):
+            os.makedirs('./idx_data')
+        for n in range(self.noise_aug_num):
+            noise_idx = self.noise_augment(self.idx)
+            scale_idx_list = self.idx_augment(noise_idx)
+            # store the idx via torch
+            for i, scale_idx in enumerate(scale_idx_list):
+                print(f"Scale {i} size: {scale_idx.size()}")
+                torch.save(scale_idx, f'./idx_data/{self.name}_noise{n}_{i}.pt')
 
 if __name__ == '__main__':
-    ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 
-                   'reddit', 'github',  'fb15k_237', 'actor', 'airports_usa', 
-                   'airports_brazil', 'airports_europe', 'malnet', 'emaileucore', 'twitch_de', 'twitch_en', 'twitch_es', 
-                   'twitch_fr', 'twitch_pt', 'twitch_ru', 'aifb', 'am', 'mutag', 'bgs', 'wikics', 'lastfmasia', 
-                   'facebookpagepage',  'cornell', 'genius', 'penn', 'reed', 'amherst', 
-                   'johnshopkins', 'deezereurope', 'myket', 'polblogs', 'explicitbitcoin', 'gemsecdeezer_hu', 
-                   'gemsecdeezer_hr', 'gemsecdeezer_ro', 'mooc', 'lastfm', 'BrcaTcga', 
-                   'chameleon', 'squirrel', 'crocodile']
+    ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 'reddit', 'github', 
+                   'flickr', 'yelp', 'fb15k_237', 'actor', 'airports_usa', 'airports_brazil', 'airports_europe',
+                    'malnet', 'emaileucore', 'twitch_de', 'twitch_en', 'twitch_es', 'twitch_fr', 'twitch_pt', 'twitch_ru', 'aifb',
+                    'am', 'mutag', 'bgs', 'wikics', 'lastfmasia', 'facebookpagepage', 'cornell', 'genius', 'penn', 'reed',
+                    'amherst', 'johnshopkins', 'deezereurope', 'myket', 'polblogs', 'explicitbitcoin', 'gemsecdeezer_hu', 'gemsecdeezer_hr',
+                    'gemsecdeezer_ro', 'mooc', 'lastfm', 'BrcaTcga', 'chameleon', 'squirrel', 'crocodile', 'faust']
 
     device = "cuda"
     
     for d in ml_datasets:
         data = Dataset(d, device)
-        print(d, data.num_edges, data.idx.size())
         data.store_aug_idx()

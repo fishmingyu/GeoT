@@ -1,46 +1,40 @@
+import torch_geometric.datasets as datasets
 import torch
-from ogb.nodeproppred import PygNodePropPredDataset
-from ogb.linkproppred import PygLinkPropPredDataset
 
-class OgbDataset:
+
+class PyGDataset:
     def __init__(self, name: str, device):
         self.name = name
         self.device = device
         self.get_dataset()
 
     def get_dataset(self):
-        if self.name == 'products':
-            dataset = PygNodePropPredDataset(name='ogbn-products', root = 'dataset/')
+        if self.name == 'pubmed':
+            dataset = datasets.CitationFull(root='./data/', name='PubMed')
             graph = dataset[0]
-        elif self.name == 'proteins':
-            dataset = PygNodePropPredDataset(name='ogbn-proteins', root = 'dataset/')
+        elif self.name == 'citeseer':
+            dataset = datasets.CitationFull(root='./data/', name='CiteSeer')
             graph = dataset[0]
-        elif self.name == 'arxiv':
-            dataset = PygNodePropPredDataset(name='ogbn-arxiv', root = 'dataset/')
+        elif self.name == 'cora':
+            dataset = datasets.CitationFull(root='./data/', name='Cora')
             graph = dataset[0]
-        elif self.name == "mag":
-            dataset = PygNodePropPredDataset(name='ogbn-mag', root = 'dataset/')
+        elif self.name == "dblp":
+            dataset = datasets.CitationFull(root='./data/', name='DBLP')
             graph = dataset[0]
-        elif self.name == "ppa":
-            dataset = PygLinkPropPredDataset(name='ogbl-ppa', root = 'dataset/')
+        elif self.name == "amazon_computers":
+            dataset = datasets.Amazon(root='./data/', name='Computers')
             graph = dataset[0]
-        elif self.name == "collab":
-            dataset = PygLinkPropPredDataset(name='ogbl-collab', root = 'dataset/')
+        elif self.name == "amazon_photo":
+            dataset = datasets.Amazon(root='./data/', name='Photo')
             graph = dataset[0]
-        elif self.name == "ddi":
-            dataset = PygLinkPropPredDataset(name='ogbl-ddi', root = 'dataset/')
+        elif self.name == 'ppi':
+            dataset = datasets.PPI(root='./data/')
             graph = dataset[0]
-        elif self.name == "citation2":
-            dataset = PygLinkPropPredDataset(name='ogbl-citation2', root = 'dataset/')
+        elif self.name == 'reddit':
+            dataset = datasets.Reddit(root='./data/Reddit')
             graph = dataset[0]
-        elif self.name == "wikikg2":
-            dataset = PygLinkPropPredDataset(name='ogbl-wikikg2', root = 'dataset/')
-            graph = dataset[0]
-        elif self.name == "biokg":
-            dataset = PygLinkPropPredDataset(name='ogbl-biokg', root = 'dataset/')
-            graph = dataset[0]
-        elif self.name == "vessel":
-            dataset = PygLinkPropPredDataset(name='ogbl-vessel', root = 'dataset/')
+        elif self.name == 'github':
+            dataset = datasets.GitHub(root='./data/')
             graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
