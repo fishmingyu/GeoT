@@ -5,7 +5,7 @@ project(benchmark LANGUAGES CXX CUDA)
 find_package(CUDA REQUIRED)
 
 # Add current directory and csrc directory to include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}../../csrc)
 
 # Define the .cu file
