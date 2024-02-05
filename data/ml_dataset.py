@@ -250,13 +250,15 @@ class Dataset:
         # check if the directory exists
         if not os.path.exists('./idx_data'):
             os.makedirs('./idx_data')
+        
         for n in range(self.noise_aug_num):
             noise_idx = self.noise_augment(self.idx)
             scale_idx_list = self.idx_augment(noise_idx)
             # store the idx via torch
             for i, scale_idx in enumerate(scale_idx_list):
-                print(f"Scale {i} size: {scale_idx.size()}")
-                torch.save(scale_idx, f'./idx_data/{self.name}_noise{n}_{i}.pt')
+                # file name:  f'./idx_data/{self.name}_idx_{n}_{i}.pt', use numpy
+                np.save(f'./idx_data/{self.name}_idx_{n}_{i}.npy', scale_idx.cpu().numpy())
+            print(f"Finish storing {self.name} {n}th noise augmented idx")
 
 if __name__ == '__main__':
     ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'amazon_computers', 'amazon_photo', 'ppi', 'reddit', 'github', 
