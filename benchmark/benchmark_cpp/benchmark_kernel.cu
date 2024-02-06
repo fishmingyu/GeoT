@@ -45,5 +45,11 @@ int main(int argc, char **argv) {
   segscan_sr_tune<float>(sr_file, filename, nnz, feature_size, keys, indices, src,
                          dst);
   sr_file.close();
+
+  std::ofstream pr_file;
+  pr_file.open("pr_result.csv", std::ios::app);
+  segscan_pr_tune<float>(pr_file, filename, nnz, feature_size, keys, indices, src,
+                         dst);
+  pr_file.close();
   return 0;
 }
