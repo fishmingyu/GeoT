@@ -65,7 +65,7 @@ template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
 float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   if (NPerThread * NThreadX > N) {
-    printf("invalid NPerThread * NThreadX > N\n");
+    // printf("invalid NPerThread * NThreadX > N\n");
     return 0;
   }
   dst.reset();
@@ -73,7 +73,7 @@ float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
       nnz, N, index, src, dst);
 
   if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
-    printf("segscan_sr_sorted failed\n");
+    // printf("segscan_sr_sorted failed\n");
     return -1;
   }
 
@@ -92,7 +92,7 @@ float segscan_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
 
   if (NPerThread * NThreadY > N) {
-    printf("invalid NPerThread * NThreadY > N\n");
+    // printf("invalid NPerThread * NThreadY > N\n");
     return 0;
   }
   dst.reset();
@@ -100,7 +100,7 @@ float segscan_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
       nnz, N, index, src, dst);
 
   if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
-    printf("segscan_pr_sorted failed\n");
+    // printf("segscan_pr_sorted failed\n");
     return -1;
   }
 

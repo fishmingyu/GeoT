@@ -34,7 +34,8 @@ int main(int argc, char **argv) {
   src.tocuda();
   dst.tocuda();
   indices.tocuda();
-  printf("start index scatter test\n");
+  // print the file name
+  printf("start index scatter test for: %s, N: %d\n", filename, feature_size);
   cudaDeviceSynchronize();
   // warm up
   for (int i = 0; i < 1000; i++)
