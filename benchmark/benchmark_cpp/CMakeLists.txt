@@ -12,6 +12,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}../../csrc)
 set(CUDA_SOURCE_FILES benchmark_kernel.cu)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
 
 # For CUDA add_executable should work just like for regular C++ code
 add_executable(benchmark ${CUDA_SOURCE_FILES})
