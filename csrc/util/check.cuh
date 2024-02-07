@@ -122,7 +122,7 @@ bool checkGather(ValueType *dst, ValueType *src, IndexType *index, int nnz,
   std::vector<ValueType> dst_cpu(nnz * N, 0);
   gather_sequencial<ValueType, IndexType>(src, index, nnz, N, dst_len,
                                           dst_cpu.data());
-  std::cout << "Finish golden" << std::endl;
+  // std::cout << "Finish golden" << std::endl;
   for (int i = 0; i < N * nnz; i++) {
     if (fabs(dst[i] - dst_cpu[i]) > 1e-2 * fabs(dst_cpu[i])) {
       printf("Error[%d][%d]: dst = %f, dst_cpu = %f\n", i / N, i % N, dst[i],
@@ -130,7 +130,7 @@ bool checkGather(ValueType *dst, ValueType *src, IndexType *index, int nnz,
       return false;
     }
   }
-  printf("Check passed!\n");
+  // printf("Check passed!\n");
   return true;
 }
 
