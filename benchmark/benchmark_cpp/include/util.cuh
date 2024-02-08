@@ -7,10 +7,9 @@
 #include <cuda_runtime_api.h> // cudaMalloc, cudaMemcpy, etc.
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <stdio.h>  // printf
 #include <stdlib.h> // EXIT_FAILURE
-
+#include <string>
 
 #define ITER 300
 __global__ void warm_up() {}
@@ -24,8 +23,8 @@ void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
   int blockDimX = NThreadX;
   int blockDimY = NnzThreadY;
 
-  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
-               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 gridDim(CEIL(nnz, NnzThreadY * NnzPerThread),
+               CEIL(N, NThreadX * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   segscan_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,

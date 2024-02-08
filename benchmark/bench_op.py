@@ -38,6 +38,7 @@ def timeit(func, iter, *args, **kwargs):
 def test_index_scatter(dataset, feature_size, device):
     g = PyGDataset(dataset, device)
     idx = g.idx
+    print(idx.size())
     src = torch.rand(idx.size(0), feature_size).to(device)
     # benchmark time
     iter = 100

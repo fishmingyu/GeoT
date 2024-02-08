@@ -1,5 +1,5 @@
-#include "./include/seg_func.hpp"
 #include "./include/npy.hpp"
+#include "./include/seg_func.hpp"
 
 std::vector<long> npy_data_loader(const char *filename) {
   std::string file_path(filename);
@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   auto idx = npy_data_loader(filename);
   int nnz = idx.size();
   int keys = idx.back() + 1;
-  
+
   util::RamArray<long> indices;
   indices.create(nnz, idx);
 
@@ -43,14 +43,14 @@ int main(int argc, char **argv) {
   // create a csv file to store the result
   std::ofstream sr_file;
   sr_file.open("sr_result.csv", std::ios::app);
-  segscan_sr_tune<float>(sr_file, filename, nnz, feature_size, keys, indices, src,
-                         dst);
+  segscan_sr_tune<float>(sr_file, filename, nnz, feature_size, keys, indices,
+                         src, dst);
   sr_file.close();
 
   std::ofstream pr_file;
   pr_file.open("pr_result.csv", std::ios::app);
-  segscan_pr_tune<float>(pr_file, filename, nnz, feature_size, keys, indices, src,
-                         dst);
+  segscan_pr_tune<float>(pr_file, filename, nnz, feature_size, keys, indices,
+                         src, dst);
   pr_file.close();
   return 0;
 }
