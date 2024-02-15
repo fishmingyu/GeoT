@@ -8,7 +8,6 @@
 
 using namespace at::native;
 
-// policy listed in template
 template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 void segscan_sr_sorted(const at::Tensor &index, const at::Tensor &src,
@@ -23,8 +22,8 @@ void segscan_sr_sorted(const at::Tensor &index, const at::Tensor &src,
   int blockDimX = NThreadX;
   int blockDimY = NnzThreadY;
 
-  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
-               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 gridDim(CEIL(nnz, NnzThreadY * NnzPerThread),
+               CEIL(N, NThreadX * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   segscan_sr_sorted_kernel<scalar_t, NPerThread, NThreadX, NnzPerThread,
@@ -55,6 +54,29 @@ void segscan_pr_sorted(const at::Tensor &index, const at::Tensor &src,
       <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
 
+template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+void scatter_reduce(const at::Tensor &index, const at::Tensor &src,
+                    const at::Tensor &dst) {
+  const auto nnz = index.numel();
+  const auto N = src.numel() / nnz;
+  const auto key = dst.numel() / N;
+  auto indices = index.data_ptr<int64_t>();
+  auto src_data = src.data_ptr<scalar_t>();
+  auto dst_data = dst.data_ptr<scalar_t>();
+
+  int blockDimX = NThreadX;
+  int blockDimY = NnzThreadY;
+
+  dim3 gridDim(CEIL(nnz, NnzThreadY * NnzPerThread),
+               CEIL(N, NThreadX * NPerThread), 1);
+  dim3 blockDim(blockDimX, blockDimY, 1);
+
+  scatter_reduce_kernel<scalar_t, NPerThread, NThreadX, NnzPerThread,
+                        NnzThreadY>
+      <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
+}
+
 template <typename scalar_t, ReductionType reduce>
 void index_scatter_sorted_wrapper(const at::Tensor &index,
                                   const at::Tensor &src,
@@ -65,11 +87,11 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
   int avg_key_len = nnz / keys;
   if (N >= 1 && N <= 4) {
     segscan_pr_sorted<scalar_t, 1, 1, 2, 4, 32>(index, src, dst);
-  } else if (N > 4 && N < 32) {
+  } else if (N > 4 && N <= 16) {
     segscan_pr_sorted<scalar_t, 2, 2, 2, 4, 32>(index, src, dst);
-  } else if (N >= 32 && N < 64) {
+  } else if (N > 16 && N < 64) {
     if (avg_key_len < 16) {
-      segscan_sr_sorted<scalar_t, 2, 16, 32, 1>(index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 16, 16, 2>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
       segscan_sr_sorted<scalar_t, 2, 16, 32, 2>(index, src, dst);
     } else {
@@ -77,7 +99,7 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
     }
   } else if (N >= 64 && N < 128) {
     if (avg_key_len < 16) {
-      segscan_sr_sorted<scalar_t, 2, 32, 32, 1>(index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 32, 16, 2>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
       segscan_sr_sorted<scalar_t, 2, 32, 32, 2>(index, src, dst);
     } else {
@@ -85,11 +107,48 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
     }
   } else {
     if (avg_key_len < 16) {
-      segscan_sr_sorted<scalar_t, 2, 64, 32, 1>(index, src, dst);
+      segscan_sr_sorted<scalar_t, 2, 64, 16, 2>(index, src, dst);
     } else if (avg_key_len >= 16 && avg_key_len < 64) {
       segscan_sr_sorted<scalar_t, 2, 64, 32, 2>(index, src, dst);
     } else {
       segscan_sr_sorted<scalar_t, 2, 64, 32, 4>(index, src, dst);
+    }
+  }
+}
+
+template <typename scalar_t, ReductionType reduce>
+void index_sorted_unsorted_wrapper(const at::Tensor &index,
+                                   const at::Tensor &src,
+                                   const at::Tensor &dst) {
+  const auto nnz = index.numel();
+  const auto N = src.numel() / nnz;
+  const auto keys = dst.numel() / N;
+  int avg_key_len = nnz / keys;
+  if (N < 32) {
+    scatter_reduce<scalar_t, 2, 16, 16, 2>(index, src, dst);
+  } else if (N >= 32 && N < 64) {
+    if (avg_key_len < 16) {
+      scatter_reduce<scalar_t, 2, 16, 16, 2>(index, src, dst);
+    } else if (avg_key_len >= 16 && avg_key_len < 64) {
+      scatter_reduce<scalar_t, 2, 16, 32, 2>(index, src, dst);
+    } else {
+      scatter_reduce<scalar_t, 2, 16, 32, 4>(index, src, dst);
+    }
+  } else if (N >= 64 && N < 128) {
+    if (avg_key_len < 16) {
+      scatter_reduce<scalar_t, 2, 32, 16, 2>(index, src, dst);
+    } else if (avg_key_len >= 16 && avg_key_len < 64) {
+      scatter_reduce<scalar_t, 2, 32, 32, 2>(index, src, dst);
+    } else {
+      scatter_reduce<scalar_t, 2, 32, 32, 4>(index, src, dst);
+    }
+  } else {
+    if (avg_key_len < 16) {
+      scatter_reduce<scalar_t, 2, 64, 16, 2>(index, src, dst);
+    } else if (avg_key_len >= 16 && avg_key_len < 64) {
+      scatter_reduce<scalar_t, 2, 64, 32, 2>(index, src, dst);
+    } else {
+      scatter_reduce<scalar_t, 2, 64, 32, 4>(index, src, dst);
     }
   }
 }
@@ -100,6 +159,17 @@ void index_scatter_sorted_dispatch(const at::Tensor &index,
   AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "index_scatter_sorted", [&] {
     DISPATCH_REDUCTION_TYPES(reduction, [&]() {
       index_scatter_sorted_wrapper<scalar_t, reduce>(index, src, dst);
+    });
+  });
+}
+
+void index_scatter_unsorted_dispatch(const at::Tensor &index,
+                                     const at::Tensor &src,
+                                     const at::Tensor &dst,
+                                     const ReductionType &reduction) {
+  AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "index_scatter_unsorted", [&] {
+    DISPATCH_REDUCTION_TYPES(reduction, [&]() {
+      index_sorted_unsorted_wrapper<scalar_t, reduce>(index, src, dst);
     });
   });
 }
@@ -120,8 +190,7 @@ at::Tensor index_scatter_cuda(const int64_t dim, const at::Tensor &index,
   if (sorted) {
     index_scatter_sorted_dispatch(index, src, dst, reduce_type);
   } else {
-    TORCH_CHECK(false, "unsorted index is not supported yet");
+    index_scatter_unsorted_dispatch(index, src, dst, reduce_type);
   }
-
   return dst;
 }
