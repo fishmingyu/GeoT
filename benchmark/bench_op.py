@@ -2,12 +2,13 @@ import torch
 import torch_index_scatter
 from utils import PyGDataset
 import time
+import cupy 
 
 from torch_scatter import scatter
 from torch_scatter import segment_coo
 
 
-def pyg_scatter(index, src):
+def pyg_scatter_reduce(index, src):
     return scatter(src, index, dim=0, reduce='sum')
 
 
@@ -15,14 +16,19 @@ def pyg_segment_coo(index, src):
     return segment_coo(src, index, reduce='sum')
 
 
-def torch_scatter(index, src):  # use torch.scatter_add_ as reference
+def torch_scatter_reduce(index, src):  # use torch.scatter_add_ as reference
     keys = index[-1] + 1
     device = index.device
     return torch.zeros(keys, src.size(1), device=device).scatter_add_(0, index.unsqueeze(-1).expand_as(src), src)
 
 
-def index_scatter(index, src):
-    return torch_index_scatter.index_scatter(0, src, index, reduce='sum', sorted=True)
+def torch_index_reduce(index, src):
+    keys = index[-1] + 1
+    device = index.device
+    return torch.zeros(keys, src.size(1), device=device).index_add_(0, index, src)
+
+def index_scatter_reduce(index, src):
+    return torch_index_scatter.index_scatter(0, src, index, reduce='sum', sorted=False)
 
 
 def timeit(func, iter, *args, **kwargs):
@@ -42,14 +48,15 @@ def test_index_scatter(dataset, feature_size, device):
     src = torch.rand(idx.size(0), feature_size).to(device)
     # benchmark time
     iter = 100
-    timeit(pyg_scatter, iter, idx, src)
+    timeit(pyg_scatter_reduce, iter, idx, src)
     timeit(pyg_segment_coo, iter, idx, src)
-    timeit(torch_scatter, iter, idx, src)
-    timeit(index_scatter, iter, idx, src)
+    timeit(torch_scatter_reduce, iter, idx, src)
+    timeit(index_scatter_reduce, iter, idx, src)
+    timeit(torch_index_reduce, iter, idx, src)
 
 
 if __name__ == '__main__':
-    dataset = 'pubmed'
+    dataset = 'amazon_computers'
     feature_size = 128
     device = "cuda"
     test_index_scatter(dataset, feature_size, device)
