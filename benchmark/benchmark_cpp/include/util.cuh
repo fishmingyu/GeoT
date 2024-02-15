@@ -11,7 +11,7 @@
 #include <stdlib.h> // EXIT_FAILURE
 #include <string>
 
-#define ITER 300
+#define ITER 100
 __global__ void warm_up() {}
 
 // policy listed in template
@@ -63,10 +63,6 @@ template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
-  if (NPerThread * NThreadX > N) {
-    // printf("invalid NPerThread * NThreadX > N\n");
-    return 0;
-  }
   dst.reset();
   segscan_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread, NnzThreadY>(
       nnz, N, index, src, dst);
@@ -90,10 +86,6 @@ template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
 float segscan_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
 
-  if (NPerThread * NThreadY > N) {
-    // printf("invalid NPerThread * NThreadY > N\n");
-    return 0;
-  }
   dst.reset();
   segscan_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum, RSync>(
       nnz, N, index, src, dst);

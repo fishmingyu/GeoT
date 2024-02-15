@@ -30,18 +30,20 @@ void segscan_sr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, i
     float time = 0;
     float gflops = 0;
 """
-    NPerThread_list = [1, 2, 4]
+    NPerThread_list = [1, 2]
     NThreadX_list = [8, 16, 32, 64]
-    NnzPerThread_list = [4, 8, 16, 32, 64]
-    NnzThread = [1, 2, 4, 8]
+    NnzPerThread_list = [4, 8, 16, 32]
+    NnzThread_list = [2, 4, 8]
 
     function_body = ""
     for NPerThread in NPerThread_list:
         for NThreadX in NThreadX_list:
             for NnzPerThread in NnzPerThread_list:
-                for NnzThreadY in NnzThread:
+                for NnzThreadY in NnzThread_list:
                     # add tap in the beginning of the line
-                    function_body += "    " + generate_sr_subcode(NPerThread, NThreadX, NnzPerThread, NnzThreadY)
+                    # only (consider NThreadX * NnzThreadY >= 64)
+                    if NThreadX * NnzThreadY >= 64:
+                        function_body += "    " + generate_sr_subcode(NPerThread, NThreadX, NnzPerThread, NnzThreadY)
                     
     function_tail = r"}"
 
@@ -60,7 +62,7 @@ void segscan_pr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, i
     NThreadY_list = [1, 2, 4]
     NnzPerThread_list = [1, 2, 4]
     RNum_list = [1, 2, 4, 8]
-    RSync_list = [4, 8, 16, 32]
+    RSync_list = [8, 16, 32]
 
     function_body = ""
     for NPerThread in NPerThread_list:
