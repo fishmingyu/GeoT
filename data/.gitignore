@@ -2,3 +2,5 @@ data/
 idx_data
 *zip
 *.png
+*.log
+*.h

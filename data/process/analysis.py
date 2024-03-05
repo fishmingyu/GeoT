@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import font_manager
-
+from matplotlib.ticker import SymmetricalLogLocator
 
 # Add title and labels
 # config font
@@ -30,32 +30,27 @@ df_pr = df_pr[df_pr['feature_size'] <= 32]
 # df = pd.merge(df_sr, df_pr, on='feature_size', suffixes=('_SR', '_PR'))
 
 # # Set up the bar plot
-sns.set_style("whitegrid")
-plt.figure(figsize=(15, 6))
+# Plot SR data using lineplot with markers and color #B0F2BC
+plt.figure(figsize=(6, 6))
 
-# Add a column to differentiate between SR and PR
-df_sr['Type'] = 'SR'
-df_pr['Type'] = 'PR'
+# Plot SR data using lineplot with markers and color #B0F2BC
+sns.lineplot(x='feature_size', y='gflops', data=df_sr, marker='o', markersize=10, label='SR', color='#B0F2BC')
 
-# Concatenate SR and PR dataframes
-df_combined = pd.concat([df_sr, df_pr])
-
-# Set up the figure
-plt.figure(figsize=(10, 6))
-
-# Plot bars using sns.barplot
-sns.barplot(x='feature_size', y='gflops', hue='Type', data=df_combined, palette={'SR': 'skyblue', 'PR': 'salmon'})
+# Plot PR data using lineplot with markers and color #38B2A3
+sns.lineplot(x='feature_size', y='gflops', data=df_pr, marker='^', markersize=10, label='PR', color='#38B2A3')
 
 
-plt.title('Average GFLOPS on different Feature Size', fontname='Arial')
-plt.xlabel('Feature Size', fontname='Arial')
-plt.ylabel('GFLOPS', fontname='Arial')
+# Add title and labels with larger font size
+plt.title('Feature Size vs GFLOPS', fontsize=18, fontname='Arial',fontweight='bold')
+plt.xlabel('Feature Size', fontsize=14, fontname='Arial',fontweight='bold')
+plt.ylabel('GFLOPS', fontsize=14, fontname='Arial',fontweight='bold')
 
+# Set legend font size
+plt.legend(fontsize=12)
 # Adjust x-axis ticks and labels
-# plt.xticks([r + bar_width/2 + offset/2 for r in range(len(df))], df['feature_size'])
 
-# Show legend
-plt.legend()
-
+plt.xscale('symlog', base=2)
+plt.xticks([1, 2, 4, 8, 16, 32], ['1', '2', '4', '8', '16', '32'], fontsize=12)
+plt.yticks(fontsize=12)
 # Save the plot as a high-resolution PDF
 plt.savefig('avg_gflops_feature_barplot.pdf', dpi=300)
