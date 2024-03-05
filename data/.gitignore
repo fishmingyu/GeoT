@@ -1,5 +1,6 @@
 data/
 idx_data
+eval_data
 *zip
 *.png
 *.log

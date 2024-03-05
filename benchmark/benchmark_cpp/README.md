@@ -16,3 +16,6 @@ python run_benchmark.py
 ```
 
 ### Run ablation
+``` bash
+python run_ablation.py
+```

@@ -121,7 +121,7 @@ def process_sr(args):
     X_test_data = X_test_data.reset_index(drop=True)
 
     # Step 4: Train the decision tree regressor
-    dt = DecisionTreeRegressor(max_depth=5)
+    dt = DecisionTreeRegressor(max_depth=4, criterion='friedman_mse', splitter='best')
     dt.fit(X_train, y_train)
 
     # Step 5: Predict the (config1, config2, config3, config4) given the feature_size, size, max, std, mean
@@ -156,6 +156,7 @@ def process_sr(args):
         config2 = row['config2']
         config3 = row['config3']
         config4 = row['config4']
+        best_gflops = row['ground_truth']
         # search the gflops of given ['dataname', 'feature_size', 'config1', 'config2', 'config3', 'config4'] in every row of predicted
         # first get the dataframe of the given dataname
         # we need to split the predicted dataname to get the last part
@@ -167,7 +168,7 @@ def process_sr(args):
             print(f"Cannot find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4}")
             eval_gflops.append(0)
         else:
-            print(f"Find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4}, gflops: {gflops[0]}")
+            print(f"Find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4}, gflops: {gflops[0]}, best gflops: {best_gflops}")
             eval_gflops.append(gflops[0])
 
     eval_df['predicted'] = eval_gflops
@@ -284,7 +285,7 @@ def process_pr(args):
     X_test_data = X_test_data.reset_index(drop=True)
 
     # Step 4: Train the decision tree regressor
-    dt = DecisionTreeRegressor(max_depth=5)
+    dt = DecisionTreeRegressor(max_depth=4, criterion='friedman_mse', splitter='best')
     dt.fit(X_train, y_train)
 
     # Step 5: Predict the (config1, config2, config3, config4, config5) given the feature_size, size, max
@@ -321,6 +322,7 @@ def process_pr(args):
         config3 = row['config3']
         config4 = row['config4']
         config5 = row['config5']
+        best_gflops = row['ground_truth']
         # search the gflops of given ['dataname', 'feature_size', 'config1', 'config2', 'config3', 'config4', 'config5'] in every row of predicted
         # first get the dataframe of the given dataname
         # we need to split the predicted dataname to get the last part
@@ -332,7 +334,7 @@ def process_pr(args):
             print(f"Cannot find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4} {config5}")
             eval_gflops.append(0)
         else:
-            print(f"Find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4} {config5}, gflops: {gflops[0]}")
+            print(f"Find the gflops of {dataname} {feature_size} {config1} {config2} {config3} {config4} {config5}, gflops: {gflops[0]}, best gflops: {best_gflops}")
             eval_gflops.append(gflops[0])
         
     eval_df['predicted'] = eval_gflops
@@ -376,7 +378,7 @@ if __name__ == "__main__":
     # add arg
     parser = argparse.ArgumentParser()
     parser.add_argument("--export", type=bool, default=True, help="export file")
-    parser.add_argument("--eval", type=bool, default=True, help="eval file")
+    parser.add_argument("--eval", type=bool, default=False, help="eval file")
     parser.add_argument("--sr", type=bool, default=True, help="sr file")
     parser.add_argument("--pr", type=bool, default=True, help="pr file")
     args = parser.parse_args()
