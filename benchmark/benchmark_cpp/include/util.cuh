@@ -17,7 +17,7 @@ __global__ void warm_up() {}
 // policy listed in template
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
-void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
+void segreduce_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   // restriction
   int blockDimX = NThreadX;
@@ -27,14 +27,14 @@ void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
                CEIL(N, NThreadX * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
-  segscan_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
+  segreduce_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
                            NnzThreadY><<<gridDim, blockDim>>>(
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
-void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
+void segreduce_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   int blockDimX = RSync * RNum;
   int blockDimY = NThreadY;
@@ -43,7 +43,7 @@ void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
                CEIL(N, NThreadY * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
-  segscan_pr_sorted_kernel<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
+  segreduce_pr_sorted_kernel<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
                            RSync><<<gridDim, blockDim>>>(
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
@@ -55,27 +55,27 @@ bool check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
   src.tocpu();
   index.tocpu();
 
-  return util::checkSegScan<ValueType, int64_t>(
+  return util::checksegreduce<ValueType, int64_t>(
       dst.h_array.get(), src.h_array.get(), index.h_array.get(), nnz, N, keys);
 }
 
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
-float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
+float segreduce_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   dst.reset();
-  segscan_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread, NnzThreadY>(
+  segreduce_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread, NnzThreadY>(
       nnz, N, index, src, dst);
 
   if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
-    // printf("segscan_sr_sorted failed\n");
+    // printf("segreduce_sr_sorted failed\n");
     return -1;
   }
 
   util::gpuTimer timer;
   timer.start();
   for (int i = 0; i < ITER; i++)
-    segscan_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread,
+    segreduce_sr_sorted<ValueType, NPerThread, NThreadX, NnzPerThread,
                       NnzThreadY>(nnz, N, index, src, dst);
   timer.end();
   return timer.elapsed() / ITER;
@@ -83,22 +83,22 @@ float segscan_sr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
 
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
-float segscan_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
+float segreduce_pr_test(int nnz, int N, int keys, util::RamArray<Index> &index,
                       util::RamArray<DType> &src, util::RamArray<DType> &dst) {
 
   dst.reset();
-  segscan_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum, RSync>(
+  segreduce_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum, RSync>(
       nnz, N, index, src, dst);
 
   if (!check<ValueType>(nnz, N, keys, index, src, dst)) {
-    // printf("segscan_pr_sorted failed\n");
+    // printf("segreduce_pr_sorted failed\n");
     return -1;
   }
 
   util::gpuTimer timer;
   timer.start();
   for (int i = 0; i < ITER; i++)
-    segscan_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
+    segreduce_pr_sorted<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
                       RSync>(nnz, N, index, src, dst);
   timer.end();
   return timer.elapsed() / ITER;

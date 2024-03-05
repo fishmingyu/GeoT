@@ -14,7 +14,7 @@ __global__ void warm_up() {}
 // policy listed in template
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
-void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
+void segreduce_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   // restriction
   int blockDimX = NThreadX;
@@ -24,14 +24,14 @@ void segscan_sr_sorted(int nnz, int N, util::RamArray<Index> &index,
                CEIL(nnz, NnzThreadY * NnzPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
-  segscan_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
+  segreduce_sr_sorted_kernel<ValueType, NPerThread, NThreadX, NnzPerThread,
                            NnzThreadY><<<gridDim, blockDim>>>(
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
 
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
-void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
+void segreduce_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
                        util::RamArray<DType> &src, util::RamArray<DType> &dst) {
   int blockDimX = RSync * RNum;
   int blockDimY = NThreadY;
@@ -40,7 +40,7 @@ void segscan_pr_sorted(int nnz, int N, util::RamArray<Index> &index,
                CEIL(N, NThreadY * NPerThread), 1);
   dim3 blockDim(blockDimX, blockDimY, 1);
 
-  segscan_pr_sorted_kernel<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
+  segreduce_pr_sorted_kernel<ValueType, NPerThread, NThreadY, NnzPerThread, RNum,
                            RSync><<<gridDim, blockDim>>>(
       nnz, N, src.d_array.get(), index.d_array.get(), dst.d_array.get());
 }
@@ -68,7 +68,7 @@ void check(int nnz, int N, int keys, util::RamArray<int64_t> &index,
   dst.tocpu();
   src.tocpu();
   index.tocpu();
-  util::checkSegScan<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
+  util::checksegreduce<ValueType, int64_t>(dst.h_array.get(), src.h_array.get(),
                                          index.h_array.get(), nnz, N, keys);
 }
 
@@ -136,11 +136,11 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 1000; i++)
     warm_up<<<1, 1>>>();
 
-  segscan_sr_sorted<DType, 2, 16, 32, 2>(nnz, feature_size, sp_indices, src,
+  segreduce_sr_sorted<DType, 2, 16, 32, 2>(nnz, feature_size, sp_indices, src,
                                          dst);
   check<DType>(nnz, feature_size, keys, sp_indices, src, dst);
   dst.reset();
-  segscan_pr_sorted<DType, 2, 2, 2, 2, 32>(nnz, feature_size, sp_indices, src,
+  segreduce_pr_sorted<DType, 2, 2, 2, 2, 32>(nnz, feature_size, sp_indices, src,
                                            dst);
   check<DType>(nnz, feature_size, keys, sp_indices, src, dst);
   src.reset();

@@ -1,6 +1,6 @@
 import torch
 import torch_index_scatter
-from utils import PyGDataset
+from utils import Dataset
 import time
 import cupy 
 
@@ -42,7 +42,7 @@ def timeit(func, iter, *args, **kwargs):
 
 
 def test_index_scatter(dataset, feature_size, device):
-    g = PyGDataset(dataset, device)
+    g = Dataset(dataset, device)
     idx = g.idx
     print(idx.size())
     src = torch.rand(idx.size(0), feature_size).to(device)

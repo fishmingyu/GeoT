@@ -2,7 +2,7 @@
 # Template for the C++ code
 # 4 configurations: int NPerThread, int NThreadX, int NnzPerThread, int NnzThreadY
 def generate_sr_subcode(NPerThread, NThreadX, NnzPerThread, NnzThreadY):
-    function_name = f"segscan_sr_test"
+    function_name = f"segreduce_sr_test"
     value_type = f"ValueType"
     template_list = f"<{value_type}, {NPerThread}, {NThreadX}, {NnzPerThread}, {NnzThreadY}>"
     argument_list = f"(nnz, N, keys, index, src, dst)"
@@ -13,7 +13,7 @@ def generate_sr_subcode(NPerThread, NThreadX, NnzPerThread, NnzThreadY):
 
 # 5 configurations: int NPerThread, int NThreadY, int NnzPerThread, int RNum, int RSync
 def generate_pr_subcode(NPerThread, NThreadY, NnzPerThread, RNum, RSync):
-    function_name = f"segscan_pr_test"
+    function_name = f"segreduce_pr_test"
     value_type = f"ValueType"
     template_list = f"<{value_type}, {NPerThread}, {NThreadY}, {NnzPerThread}, {RNum}, {RSync}>"
     argument_list = f"(nnz, N, keys, index, src, dst)"
@@ -25,7 +25,7 @@ def generate_pr_subcode(NPerThread, NThreadY, NnzPerThread, RNum, RSync):
 def generate_sr_tune():
     function_head = r"""
 template <typename ValueType>
-void segscan_sr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, int keys, util::RamArray<Index> &index,
+void segreduce_sr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, int keys, util::RamArray<Index> &index,
                      util::RamArray<DType> &src, util::RamArray<DType> &dst) {
     float time = 0;
     float gflops = 0;
@@ -53,7 +53,7 @@ void segscan_sr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, i
 def generate_pr_tune():
     function_head = r"""
 template <typename ValueType>
-void segscan_pr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, int keys, util::RamArray<Index> &index,
+void segreduce_pr_tune(std::ofstream &out_file, char *data_name, int nnz, int N, int keys, util::RamArray<Index> &index,
                      util::RamArray<DType> &src, util::RamArray<DType> &dst) {
     float time = 0;
     float gflops = 0;

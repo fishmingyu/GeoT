@@ -1,5 +1,5 @@
 #include "./include/npy.hpp"
-#include "./include/seg_func.hpp"
+#include "./include/seg_rule.hpp"
 
 std::vector<long> npy_data_loader(const char *filename) {
   std::string file_path(filename);
@@ -41,18 +41,12 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 1000; i++)
     warm_up<<<1, 1>>>();
   // create a csv file to store the result
-  std::ofstream sr_file;
-  sr_file.open("sr_result.csv", std::ios::app);
-  segreduce_sr_tune<float>(sr_file, filename, nnz, feature_size, keys, indices,
-                         src, dst);
-  sr_file.close();
-  // if the feature size is less than 32, then we test the pr kernel
-  if (feature_size <= 32) {
-    std::ofstream pr_file;
-    pr_file.open("pr_result.csv", std::ios::app);
-    segreduce_pr_tune<float>(pr_file, filename, nnz, feature_size, keys, indices,
-                           src, dst);
-    pr_file.close();
-  }
+  std::ofstream rule_file;
+  rule_file.open("rule_result.csv", std::ios::app);
+  segreduce_naive_rule<float>(rule_file, filename, nnz, feature_size,
+                              keys, indices, src, dst);
+  segreduce_dtree_rule<float>(rule_file, filename, nnz, feature_size, keys,
+                        indices, src, dst);
+  rule_file.close();
   return 0;
 }
