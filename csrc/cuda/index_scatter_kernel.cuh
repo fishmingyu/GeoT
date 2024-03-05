@@ -47,7 +47,7 @@ RSync: sync threads group
 */
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
-__global__ void segscan_pr_sorted_kernel(const int nnz, const int N,
+__global__ void segreduce_pr_sorted_kernel(const int nnz, const int N,
                                          const ValueType *src,
                                          const int64_t *index, ValueType *dst) {
   int lane_id = (threadIdx.x % RSync);
@@ -134,7 +134,7 @@ RSync: sync threads group = 1
 */
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
-__global__ void segscan_sr_sorted_kernel(const int nnz, const int N,
+__global__ void segreduce_sr_sorted_kernel(const int nnz, const int N,
                                          const ValueType *src,
                                          const int64_t *index, ValueType *dst) {
   int lane_id = threadIdx.x;

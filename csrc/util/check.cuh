@@ -99,7 +99,7 @@ void gather_sequencial(const ValueType *src, const IndexType *index,
 }
 
 template <typename ValueType, typename IndexType>
-bool checkSegScan(ValueType *dst, ValueType *src, IndexType *index, int nnz,
+bool checksegreduce(ValueType *dst, ValueType *src, IndexType *index, int nnz,
                   int N, int dst_len) {
   std::vector<ValueType> dst_cpu(dst_len * N, 0);
   segment_coo_sequencial<ValueType, IndexType>(src, index, nnz, N, dst_len,
