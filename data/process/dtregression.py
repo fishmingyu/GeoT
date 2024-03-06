@@ -22,35 +22,15 @@ from sklearn.tree import _tree
 # Step 3: Split the dataset into training and testing sets
 # Step 4: Train the decision tree regressor
 
-sr_config1_map = {1:0, 2:1}
-sr_config2_map = {8:0, 16:1, 32:2, 64:3}
-sr_config3_map = {4:0, 8:1, 16:2, 32:3}
-sr_config4_map = {2:0, 4:1, 8:2}
 
-inv_sr_config1_map = {0:1, 1:2}
-inv_sr_config2_map = {0:8, 1:16, 2:32, 3:64}
-inv_sr_config3_map = {0:4, 1:8, 2:16, 3:32}
-inv_sr_config4_map = {0:2, 1:4, 2:8}
-
-def sr_map_df(df):
-    df['config1'] = df['config1'].map(sr_config1_map)
-    df['config2'] = df['config2'].map(sr_config2_map)
-    df['config3'] = df['config3'].map(sr_config3_map)
-    df['config4'] = df['config4'].map(sr_config4_map)
-    return df
-
-def sr_inverse_map_df(df):
-    df['config1'] = df['config1'].map(inv_sr_config1_map)
-    df['config2'] = df['config2'].map(inv_sr_config2_map)
-    df['config3'] = df['config3'].map(inv_sr_config3_map)
-    df['config4'] = df['config4'].map(inv_sr_config4_map)
-    return df
+def round_to_nearest_power_of_two(x):
+    return 2 ** np.round(np.log2(x)).astype(int)
 
 def predict_sr(dt, X_test):
     y_pred = dt.predict(X_test)
     y_pred = np.round(y_pred).astype(int)
     y_pred = pd.DataFrame(y_pred, columns=['config1', 'config2', 'config3', 'config4'])
-    y_pred = sr_inverse_map_df(y_pred)
+    y_pred = round_to_nearest_power_of_two(y_pred)
     return y_pred
 
 
@@ -81,10 +61,10 @@ def tree_to_code_sr(tree, feature_names):
             # we need first convert the leaf node use round and mapping
             value = tree_.value[node] # shape (4, 1)
             value = value.flatten()
-            config1 = inv_sr_config1_map[np.round(value[0])]
-            config2 = inv_sr_config2_map[np.round(value[1])]
-            config3 = inv_sr_config3_map[np.round(value[2])]
-            config4 = inv_sr_config4_map[np.round(value[3])]
+            config1 = round_to_nearest_power_of_two(value[0])
+            config2 = round_to_nearest_power_of_two(value[1])
+            config3 = round_to_nearest_power_of_two(value[2])
+            config4 = round_to_nearest_power_of_two(value[3])
             cpp_code += f"{indent}segreduce_sr_sorted<scalar_t, {config1}, {config2}, {config3}, {config4}>(index, src, dst);\n"
 
     recurse(0, 0)
@@ -98,12 +78,11 @@ def process_sr(args):
     df = df[df['feature_size'] >= 8]
     # reindex the dataset
     df = df.reset_index(drop=True)
-    df = sr_map_df(df)
 
     # Step 2: Split the dataset into features and target
     # add new avg = size / max
     df['avg'] = df['size'] / df['max']
-    features = df[['feature_size', 'avg']]
+    features = df[['feature_size', 'size', 'avg']]
     # convert config1, config2, config3, config4 using the map
 
     target = df[['config1', 'config2', 'config3', 'config4']]
@@ -121,7 +100,7 @@ def process_sr(args):
     X_test_data = X_test_data.reset_index(drop=True)
 
     # Step 4: Train the decision tree regressor
-    dt = DecisionTreeRegressor(max_depth=4, criterion='friedman_mse', splitter='best')
+    dt = DecisionTreeRegressor(max_depth=5, criterion='friedman_mse', splitter='best')
     dt.fit(X_train, y_train)
 
     # Step 5: Predict the (config1, config2, config3, config4) given the feature_size, size, max, std, mean
@@ -182,40 +161,11 @@ def process_sr(args):
     return code
 
 
-pr_config1_map = {1:0, 2:1, 4:2}
-pr_config2_map = {1:0, 2:1, 4:2}
-pr_config3_map = {1:0, 2:1, 4:2}
-pr_config4_map = {1:0, 2:1, 4:2, 8:3}
-pr_config5_map = {8:0, 16:1, 32:2}
-
-
-inv_pr_config1_map = {0:1, 1:2, 2:4}
-inv_pr_config2_map = {0:1, 1:2, 2:4}
-inv_pr_config3_map = {0:1, 1:2, 2:4}
-inv_pr_config4_map = {0:1, 1:2, 2:4, 3:8}
-inv_pr_config5_map = {0:8, 1:16, 2:32}
-
-def pr_map_df(df):
-    df['config1'] = df['config1'].map(pr_config1_map)
-    df['config2'] = df['config2'].map(pr_config2_map)
-    df['config3'] = df['config3'].map(pr_config3_map)
-    df['config4'] = df['config4'].map(pr_config4_map)
-    df['config5'] = df['config5'].map(pr_config5_map)
-    return df
-
-def pr_inverse_map_df(df):
-    df['config1'] = df['config1'].map(inv_pr_config1_map)
-    df['config2'] = df['config2'].map(inv_pr_config2_map)
-    df['config3'] = df['config3'].map(inv_pr_config3_map)
-    df['config4'] = df['config4'].map(inv_pr_config4_map)
-    df['config5'] = df['config5'].map(inv_pr_config5_map)
-    return df
-
 def predict_pr(dt, X_test):
     y_pred = dt.predict(X_test)
     y_pred = np.round(y_pred).astype(int)
     y_pred = pd.DataFrame(y_pred, columns=['config1', 'config2', 'config3', 'config4', 'config5'])
-    y_pred = pr_inverse_map_df(y_pred)
+    y_pred = round_to_nearest_power_of_two(y_pred)
     return y_pred
 
 def tree_to_code_pr(tree, feature_names):
@@ -245,11 +195,11 @@ def tree_to_code_pr(tree, feature_names):
             # we need first convert the leaf node use round and mapping
             value = tree_.value[node] # shape (5, 1)
             value = value.flatten()
-            config1 = inv_pr_config1_map[np.round(value[0])]
-            config2 = inv_pr_config2_map[np.round(value[1])]
-            config3 = inv_pr_config3_map[np.round(value[2])]
-            config4 = inv_pr_config4_map[np.round(value[3])]
-            config5 = inv_pr_config5_map[np.round(value[4])]
+            config1 = round_to_nearest_power_of_two(value[0])
+            config2 = round_to_nearest_power_of_two(value[1])
+            config3 = round_to_nearest_power_of_two(value[2])
+            config4 = round_to_nearest_power_of_two(value[3])
+            config5 = round_to_nearest_power_of_two(value[4])
             cpp_code += f"{indent}segreduce_pr_sorted<scalar_t, {config1}, {config2}, {config3}, {config4}, {config5}>(index, src, dst);\n"
 
     recurse(0, 0)
@@ -263,12 +213,11 @@ def process_pr(args):
     df = df[df['feature_size'] < 8]
     # reindex the dataset
     df = df.reset_index(drop=True)
-    df = pr_map_df(df)
 
     # Step 2: Split the dataset into features and target
     # add new avg = size / max
     df['avg'] = df['size'] / df['max']
-    features = df[['feature_size', 'avg']]
+    features = df[['feature_size', 'size', 'avg']]
     # convert config1, config2, config3, config4 using the map
     target = df[['config1', 'config2', 'config3', 'config4', 'config5']]
 
@@ -285,7 +234,7 @@ def process_pr(args):
     X_test_data = X_test_data.reset_index(drop=True)
 
     # Step 4: Train the decision tree regressor
-    dt = DecisionTreeRegressor(max_depth=4, criterion='friedman_mse', splitter='best')
+    dt = DecisionTreeRegressor(max_depth=5, criterion='friedman_mse', splitter='best')
     dt.fit(X_train, y_train)
 
     # Step 5: Predict the (config1, config2, config3, config4, config5) given the feature_size, size, max
@@ -359,10 +308,10 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
                                   const at::Tensor &src,
                                   const at::Tensor &dst) {
 """
-    function_body = r"""    const auto nnz = index.numel();
-    const auto feature_size = src.numel() / nnz;
+    function_body = r"""    const auto size = index.numel();
+    const auto feature_size = src.numel() / size;
     const auto keys = dst.numel() / feature_size;
-    int avg = nnz / keys;
+    int avg = size / keys;
 """
     # if feature_size < 8, gen pr code; else gen sr code
     function_body += "    if (feature_size < 8) {\n"

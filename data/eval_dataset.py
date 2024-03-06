@@ -26,8 +26,8 @@ class Dataset:
         elif self.name == 'cora':
             dataset = datasets.CitationFull(root='./data/', name='Cora')
             graph = dataset[0]
-        elif self.name == "dblp":
-            dataset = datasets.CitationFull(root='./data/', name='DBLP')
+        elif self.name == "amazon_photo":
+            dataset = datasets.Amazon(root='./data/', name='Photo')
             graph = dataset[0]
         elif self.name == 'ppi':
             dataset = datasets.PPI(root='./data/PPI')
@@ -62,7 +62,7 @@ class Dataset:
         print(f"Finish storing {self.name} idx")
 
 if __name__ == '__main__':
-    ml_datasets = ['pubmed', 'citeseer', 'cora', 'dblp', 'ppi', 'yelp', 'ogbn-arxiv', 'ogbl-collab']
+    ml_datasets = ['pubmed', 'citeseer', 'cora', 'amazon_photo', 'ppi', 'yelp', 'ogbn-arxiv', 'ogbl-collab']
 
     device = "cpu"
     
