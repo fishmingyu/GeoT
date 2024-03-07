@@ -45,16 +45,17 @@ def get_extensions():
         nvcc_flags += ['-O2']
         extra_compile_args['nvcc'] = nvcc_flags
 
-    name = 'index_scatter'
+    names = ['index_scatter', 'gather_scatter']
     sources = main_files
 
-    path = osp.join(extensions_dir, 'cpu', f'{name}_cpu.cpp')
-    if osp.exists(path):
-        sources += [path]
+    for name in names:
+        path = osp.join(extensions_dir, 'cpu', f'{name}_cpu.cpp')
+        if osp.exists(path):
+            sources += [path]
 
-    path = osp.join(extensions_dir, 'cuda', f'{name}_cuda.cu')
-    if WITH_CUDA and osp.exists(path):
-        sources += [path]
+        path = osp.join(extensions_dir, 'cuda', f'{name}_cuda.cu')
+        if WITH_CUDA and osp.exists(path):
+            sources += [path]
 
     Extension = CUDAExtension if WITH_CUDA else CppExtension
     extension = Extension(
@@ -68,7 +69,6 @@ def get_extensions():
         libraries=libraries,
     )
     extensions += [extension]
-
     return extensions
 
 

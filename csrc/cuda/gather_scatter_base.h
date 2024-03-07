@@ -17,7 +17,8 @@ void gather_scatter_sr_sorted(const at::Tensor &src_index,
                               const at::Tensor &src, const at::Tensor &dst) {
   const auto nnz = src_index.size(0);
   const auto N = src.size(1);
-  auto indices = index.data_ptr<int64_t>();
+  auto src_indices = src_index.data_ptr<int64_t>();
+  auto dst_indices = dst_index.data_ptr<int64_t>();
   auto src_data = src.data_ptr<scalar_t>();
   auto dst_data = dst.data_ptr<scalar_t>();
 
@@ -29,8 +30,8 @@ void gather_scatter_sr_sorted(const at::Tensor &src_index,
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   gather_scatter_sr_sorted_kernel<scalar_t, NPerThread, NThreadX, NnzPerThread,
-                                  NnzThreadY>
-      <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
+                                  NnzThreadY><<<gridDim, blockDim>>>(
+      nnz, N, src_indices, dst_indices, src_data, dst_data);
 }
 
 template <typename scalar_t, int NPerThread, int NThreadY, int NnzPerThread,
@@ -40,7 +41,8 @@ void gather_scatter_pr_sorted(const at::Tensor &src_index,
                               const at::Tensor &src, const at::Tensor &dst) {
   const auto nnz = src_index.size(0);
   const auto N = src.size(1);
-  auto indices = index.data_ptr<int64_t>();
+  auto src_indices = src_index.data_ptr<int64_t>();
+  auto dst_indices = dst_index.data_ptr<int64_t>();
   auto src_data = src.data_ptr<scalar_t>();
   auto dst_data = dst.data_ptr<scalar_t>();
 
@@ -52,6 +54,6 @@ void gather_scatter_pr_sorted(const at::Tensor &src_index,
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   gather_scatter_pr_sorted_kernel<scalar_t, NPerThread, NThreadY, NnzPerThread,
-                                  RNum, RSync>
-      <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
+                                  RNum, RSync><<<gridDim, blockDim>>>(
+      nnz, N, src_indices, dst_indices, src_data, dst_data);
 }
