@@ -2,10 +2,11 @@
 #pragma once
 #include "gather_scatter_base.h"
 template <typename scalar_t, ReductionType reduce>
-void gather_scatter_sorted_wrapper(const at::Tensor &index,
+void gather_scatter_sorted_wrapper(const at::Tensor &src_index,
+                                   const at::Tensor &dst_index,
                                    const at::Tensor &src,
                                    const at::Tensor &dst) {
-  const auto size = index.size(1);
+  const auto size = src_index.size(0);
   const auto feature_size = src.size(1);
   const auto keys = src.size(0);
   int avg = size / keys;
@@ -15,37 +16,37 @@ void gather_scatter_sorted_wrapper(const at::Tensor &index,
         if (feature_size <= 3.0) {
           if (size <= 1435.0) {
             if (size <= 1370.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 2, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 2, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (feature_size <= 1.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         } else {
           if (size <= 1937.0) {
             if (size <= 1062.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (size <= 2202.0) {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 2, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         }
@@ -53,37 +54,37 @@ void gather_scatter_sorted_wrapper(const at::Tensor &index,
         if (feature_size <= 1.5) {
           if (size <= 4729.5) {
             if (avg <= 30.3) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 8, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (size <= 6285.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         } else {
           if (size <= 3948.0) {
             if (size <= 2961.0) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (avg <= 38.33) {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         }
@@ -93,29 +94,29 @@ void gather_scatter_sorted_wrapper(const at::Tensor &index,
         if (feature_size <= 3.0) {
           if (size <= 703065.0) {
             if (size <= 351532.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 2, 1, 2, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 2, 1, 2, 8, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (feature_size <= 1.5) {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 2, 2, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 2, 2, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         } else {
           if (size <= 1406130.0) {
             if (avg <= 1.15) {
-              gather_scatter_pr_sorted<scalar_t, 2, 2, 2, 1, 16>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 2, 2, 2, 1, 16>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 4, 4, 1, 16>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 4, 4, 1, 16>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             gather_scatter_pr_sorted<scalar_t, 2, 2, 4, 1, 16>(index, src, dst);
@@ -125,37 +126,37 @@ void gather_scatter_sorted_wrapper(const at::Tensor &index,
         if (feature_size <= 1.5) {
           if (size <= 359204.0) {
             if (avg <= 7.19) {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 1, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 1, 8, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 1, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 1, 8, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (size <= 2188236.0) {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 1, 2, 8, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         } else {
           if (avg <= 35.71) {
             if (size <= 70469.0) {
-              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 1, 2, 1, 4, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 4, 1, 2, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 4, 1, 2, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           } else {
             if (size <= 331916.5) {
-              gather_scatter_pr_sorted<scalar_t, 2, 2, 1, 8, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 2, 2, 1, 8, 32>(
+                  src_index, dst_index, src, dst);
             } else {
-              gather_scatter_pr_sorted<scalar_t, 4, 1, 2, 4, 32>(index, src,
-                                                                 dst);
+              gather_scatter_pr_sorted<scalar_t, 4, 1, 2, 4, 32>(
+                  src_index, dst_index, src, dst);
             }
           }
         }

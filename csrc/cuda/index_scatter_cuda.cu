@@ -1,3 +1,4 @@
+#include "header_cuda.h"
 #include "index_scatter_base.h"
 #include "index_scatter_rule.h"
 
@@ -23,7 +24,6 @@ void scatter_reduce(const at::Tensor &index, const at::Tensor &src,
                         NnzThreadY>
       <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
-
 
 template <typename scalar_t, ReductionType reduce>
 void index_sorted_unsorted_wrapper(const at::Tensor &index,

@@ -40,11 +40,12 @@ at::Tensor index_scatter_cuda_impl(const int64_t dim, at::Tensor index,
 
 // set the registeration via TORCH_LIBRARY_IMPL
 
-TORCH_LIBRARY(torch_index_scatter, m) {
+TORCH_LIBRARY_FRAGMENT(torch_index_scatter, m) {
   m.def("index_scatter(int dim, Tensor index, Tensor "
         "src, str reduce, bool sorted)"
         "->Tensor ");
 }
+
 // currently have some issue with the following code
 TORCH_LIBRARY_IMPL(torch_index_scatter, CPU, m) {
   m.impl("index_scatter", index_scatter_cpu_impl);

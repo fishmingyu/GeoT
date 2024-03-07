@@ -20,14 +20,14 @@ RSync: sync threads group
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
 __global__ void gather_scatter_pr_sorted_kernel(const int nnz, const int N,
-                                         const ValueType *src,
-                                         const int64_t *index, ValueType *dst) {
+                                                const int64_t *src_indices,
+                                                const int64_t *dst_indices,
+                                                const ValueType *src,
+                                                ValueType *dst) {
   int lane_id = (threadIdx.x % RSync);
   int Nnz_tile_id = blockIdx.x * RNum + threadIdx.x / RSync;
   int stride = RSync;
   int nz_start = Nnz_tile_id * RSync * NnzPerThread;
-  int src_indices = index;
-  int dst_indices = index + nnz;
   // do NnzPerThread for loop in X dim Nnz
 
   int nid = blockIdx.y * NThreadY * NPerThread + threadIdx.y * NPerThread;
@@ -108,8 +108,8 @@ RSync: sync threads group = 1
 */
 
 // previous index, [nnz]; now index, [2, nnz]
-// index 
-// [[0, 2, 3, 2, 4, 2, 3], 
+// index
+// [[0, 2, 3, 2, 4, 2, 3],
 // [0, 1, 2, 2, 3, 3, 3]] # sorted
 // 1d index, src; 2d index dst
 // src_keys = max(index[0, :]) + 1 (pre-defined)
@@ -118,16 +118,16 @@ RSync: sync threads group = 1
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 __global__ void gather_scatter_sr_sorted_kernel(const int nnz, const int N,
-                                         const ValueType *src,
-                                         const int64_t *index, ValueType *dst) {
+                                                const int64_t *src_indices,
+                                                const int64_t *dst_indices,
+                                                const ValueType *src,
+                                                ValueType *dst) {
   int lane_id = threadIdx.x;
   int nnz_id = threadIdx.y;
   int nnz_group_id = blockIdx.x;
   int n_group_id = blockIdx.y;
   int nid = n_group_id * NThreadX * NPerThread + lane_id;
   int nz_start = (nnz_group_id * NnzThreadY + nnz_id) * NnzPerThread;
-  int src_indices = index;
-  int dst_indices = index + nnz;
 
   const ValueType *src_lanes[NPerThread];
   ValueType *dst_lanes[NPerThread];

@@ -1,6 +1,5 @@
 #pragma once
 #include "../reduceutils.h"
-#include "index_scatter_cuda.h"
 #include "index_scatter_kernel.cuh"
 #include <ATen/Dispatch.h>
 #include <ATen/cuda/CUDAContext.h>
@@ -12,7 +11,7 @@ using namespace at::native;
 template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 void segreduce_sr_sorted(const at::Tensor &index, const at::Tensor &src,
-                       const at::Tensor &dst) {
+                         const at::Tensor &dst) {
   const auto nnz = index.numel();
   const auto N = src.numel() / nnz;
   const auto key = dst.numel() / N;
@@ -28,14 +27,14 @@ void segreduce_sr_sorted(const at::Tensor &index, const at::Tensor &src,
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   segreduce_sr_sorted_kernel<scalar_t, NPerThread, NThreadX, NnzPerThread,
-                           NnzThreadY>
+                             NnzThreadY>
       <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
 
 template <typename scalar_t, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
 void segreduce_pr_sorted(const at::Tensor &index, const at::Tensor &src,
-                       const at::Tensor &dst) {
+                         const at::Tensor &dst) {
   const auto nnz = index.numel();
   const auto N = src.numel() / nnz;
   const auto key = dst.numel() / N;
@@ -51,6 +50,6 @@ void segreduce_pr_sorted(const at::Tensor &index, const at::Tensor &src,
   dim3 blockDim(blockDimX, blockDimY, 1);
 
   segreduce_pr_sorted_kernel<scalar_t, NPerThread, NThreadY, NnzPerThread, RNum,
-                           RSync>
+                             RSync>
       <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
