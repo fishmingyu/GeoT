@@ -5,13 +5,14 @@ import warnings
 import torch
 import torch.nn.functional as F
 import logging
+from typing import Any, Callable, Dict, Final, List, Optional, Tuple, Union
 
 import torch.fx
 import torch_geometric
 import torch_geometric.typing
 from torch_geometric.data import Data
 from torch_geometric.loader import NeighborLoader
-from torch_geometric.nn.models import GCN
+from basicgnn import BasicGNN
 from torch_geometric.profile import benchmark
 from torch_geometric.testing import (
     disableExtensions,
@@ -21,8 +22,18 @@ from torch_geometric.testing import (
     withPackage,
 )
 
-from torch._inductor import config
-config.cpp.enable_kernel_profile = True
+from torch_geometric.nn.conv import (
+    MessagePassing,
+)
+
+class GCN(BasicGNN):
+    supports_edge_weight: Final[bool] = True
+    supports_edge_attr: Final[bool] = False
+    supports_norm_batch: Final[bool]
+
+    def init_conv(self, in_channels: int, out_channels: int,
+                  **kwargs) -> MessagePassing:
+        return GCNConv(in_channels, out_channels, **kwargs)
 
 if __name__ == "__main__":
     import argparse
