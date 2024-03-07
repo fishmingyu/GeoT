@@ -12,14 +12,13 @@ void gather_scatter_sorted_dispatch(const at::Tensor &index,
   });
 }
 
-at::Tensor gather_scatter_cuda(const int64_t dim, const at::Tensor &index,
+// we assume that the input is already sorted
+at::Tensor gather_scatter_cuda(const at::Tensor &index,
                               const at::Tensor &src, const at::Tensor &dst,
                               const c10::string_view reduce) {
-  TORCH_CHECK(dim >= 0 && dim < src.dim(),
-              "dim must be non-negative and less than input dimensions");
-  TORCH_CHECK(index.dim() == 1, "index must be 1 dimensional");
-  TORCH_CHECK(src.size(dim) == index.size(0),
-              "index length must be equal to src dimension size");
+  TORCH_CHECK(index.dim() == 2, "index must be 2 dimensional");
+  TORCH_CHECK(src.dim() == 2, "src must be 2 dimensional");
+  TORCH_CHECK(src.size(1) == dst.size(1), "src and dst must have the same feature dimension");
 
   auto reduce_type = get_reduction_enum(reduce);
   // we will use the src as the output (self in the kernel)
