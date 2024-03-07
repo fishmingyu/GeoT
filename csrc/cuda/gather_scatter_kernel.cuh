@@ -26,6 +26,8 @@ __global__ void gather_scatter_pr_sorted_kernel(const int nnz, const int N,
   int Nnz_tile_id = blockIdx.x * RNum + threadIdx.x / RSync;
   int stride = RSync;
   int nz_start = Nnz_tile_id * RSync * NnzPerThread;
+  int src_indices = index;
+  int dst_indices = index + nnz;
   // do NnzPerThread for loop in X dim Nnz
 
   int nid = blockIdx.y * NThreadY * NPerThread + threadIdx.y * NPerThread;
@@ -44,16 +46,16 @@ __global__ void gather_scatter_pr_sorted_kernel(const int nnz, const int N,
     if (nz_id < nnz) {
       src_id = nz_id;   // Feature is sorted
       v = (ValueType)1; // value is set to 1
-      key = index[nz_id];
+      key = dst_indices[nz_id];
     } else {
       src_id = nnz - 1;
       v = (ValueType)0;
-      key = index[nnz - 1];
+      key = dst_indices[nnz - 1];
     }
 
 #pragma unroll
     for (int i = 0; i < N_mask; i++) {
-      o[i] = src_panel[src_id * N + i] * v;
+      o[i] = src_panel[src_indices[src_id] * N + i] * v;
     }
 
     int key_intv = group.shfl(key, group.size() - 1) - group.shfl(key, 0);
@@ -124,6 +126,8 @@ __global__ void gather_scatter_sr_sorted_kernel(const int nnz, const int N,
   int n_group_id = blockIdx.y;
   int nid = n_group_id * NThreadX * NPerThread + lane_id;
   int nz_start = (nnz_group_id * NnzThreadY + nnz_id) * NnzPerThread;
+  int src_indices = index;
+  int dst_indices = index + nnz;
 
   const ValueType *src_lanes[NPerThread];
   ValueType *dst_lanes[NPerThread];
@@ -137,15 +141,14 @@ __global__ void gather_scatter_sr_sorted_kernel(const int nnz, const int N,
     dst_lanes[i] = dst + nid + i * NThreadX;
   }
 
-  int start_key = nz_start < nnz ? index[nz_start + nnz] : -1;
+  int start_key = nz_start < nnz ? dst_indices[nz_start] : -1;
   int curr_key = start_key;
-  int src_index = index[nz_start];
-  int dst_index = index[nz_start + nnz];
+  int src_index = nz_start;
   // initialize with first value
   if (nz_start < nnz) {
 #pragma unroll
     for (int i = 0; i < N_mask; i++) {
-      o[i] = src_lanes[i][nz_start * N];
+      o[i] = src_lanes[i][src_indices[nz_start] * N];
     }
   }
 
@@ -155,7 +158,7 @@ __global__ void gather_scatter_sr_sorted_kernel(const int nnz, const int N,
     if (nz_start + pp >= nnz) {
       break;
     }
-    int next_key = index[src_index];
+    int next_key = dst_indices[src_index];
     if (next_key != curr_key) {
 #pragma unroll
       for (int i = 0; i < N_mask; i++) {
@@ -164,12 +167,12 @@ __global__ void gather_scatter_sr_sorted_kernel(const int nnz, const int N,
       curr_key = next_key;
 #pragma unroll
       for (int i = 0; i < N_mask; i++) {
-        o[i] = src_lanes[i][src_index * N];
+        o[i] = src_lanes[i][src_indices[src_index] * N];
       }
     } else {
 #pragma unroll
       for (int i = 0; i < N_mask; i++) {
-        o[i] += src_lanes[i][src_index * N];
+        o[i] += src_lanes[i][src_indices[src_index] * N];
       }
     }
   }
