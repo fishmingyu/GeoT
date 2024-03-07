@@ -2,7 +2,6 @@ from typing import Optional, Tuple
 
 import torch
 
-
 def index_scatter(dim: int, src: torch.Tensor, index: torch.Tensor,
                   reduce: str = 'sum',
                   sorted: bool = True) -> torch.Tensor:

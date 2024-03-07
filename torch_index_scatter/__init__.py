@@ -2,6 +2,7 @@ import importlib
 import os.path as osp
 import torch
 from .index_scatter import index_scatter
+from .gather_scatter import gather_scatter
 __version__ = '0.0.1'
 
 library = '_C'
@@ -13,4 +14,4 @@ else:
     raise ImportError(f"Could not find module '{library}' in "
                       f'{osp.dirname(__file__)}')
 
-__all__ = [index_scatter]
+__all__ = [index_scatter, gather_scatter]

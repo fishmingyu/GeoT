@@ -20,6 +20,6 @@ at::Tensor gather_scatter_cuda_impl(at::Tensor src_index, at::Tensor dst_index,
 }
 
 // no TORCH_LIBRARY_IMPL for gather_scatter
-TORCH_LIBRARY_FRAGMENT(torch_gather_scatter, m) {
+TORCH_LIBRARY_FRAGMENT(torch_index_scatter, m) {
   m.def("gather_scatter", gather_scatter_cuda_impl);
 }

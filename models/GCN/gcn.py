@@ -26,6 +26,9 @@ from torch_geometric.nn.conv import (
     MessagePassing,
 )
 
+
+class GCNConv(MessagePassing):
+
 class GCN(BasicGNN):
     supports_edge_weight: Final[bool] = True
     supports_edge_attr: Final[bool] = False

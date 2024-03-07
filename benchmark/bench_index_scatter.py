@@ -2,7 +2,6 @@ import torch
 import torch_index_scatter
 from utils import Dataset
 import time
-import cupy 
 
 from torch_scatter import scatter
 from torch_scatter import segment_coo
@@ -56,7 +55,7 @@ def test_index_scatter(dataset, feature_size, device):
 
 
 if __name__ == '__main__':
-    dataset = 'amazon_computers'
+    dataset = 'amazon_photo'
     feature_size = 128
     device = "cuda"
     test_index_scatter(dataset, feature_size, device)

@@ -21,3 +21,6 @@ Run the reuslt
 cd build
 ./benchmark ${.npy file} ${N}
 ```
+
+Run python benchmark
+It's better to install torch_sparse and torch_scatter via a different conda environment
