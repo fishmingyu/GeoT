@@ -22,8 +22,8 @@ class Dataset:
         elif self.name == 'cora':
             dataset = datasets.CitationFull(root='./data/', name='Cora')
             graph = dataset[0]
-        elif self.name == "dblp":
-            dataset = datasets.CitationFull(root='./data/', name='DBLP')
+        elif self.name == "amazon_photo":
+            dataset = datasets.Amazon(root='./data/', name='Photo')
             graph = dataset[0]
         elif self.name == 'ppi':
             dataset = datasets.PPI(root='./data/PPI')
