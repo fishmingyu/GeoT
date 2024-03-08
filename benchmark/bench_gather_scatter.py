@@ -26,20 +26,21 @@ def timeit(func, iter, *args, **kwargs):
 def test_gather_scatter(dataset, feature_size, device):
     g = Dataset(dataset, device)
     edge_index = g.edge_index
+    sparse_size = g.size
     sorted_index = torch.argsort(edge_index[1])
     src_index = edge_index[0][sorted_index]
     dst_index = edge_index[1][sorted_index]
-    src_size = dst_index.max() + 1
+    src_size = sparse_size
     src = torch.rand(src_size, feature_size).to(device)
     # create sparse tensor
     row = dst_index
     col = src_index
     value = torch.ones_like(row, dtype=torch.float32)
-    adj = torch.sparse_coo_tensor(torch.stack([row, col]), value, (dst_index.max() + 1, src_index.max() + 1))
+    adj = torch.sparse_coo_tensor(torch.stack([row, col]), value, (sparse_size, sparse_size))
     adj = adj.coalesce()
 
     # create sparse tensor for torch_sparse
-    adj_torch_sparse = torch_sparse.SparseTensor(row=row, col=col, value=value, sparse_sizes=(dst_index.max() + 1, src_index.max() + 1))
+    adj_torch_sparse = torch_sparse.SparseTensor(row=row, col=col, value=value, sparse_sizes=(sparse_size, sparse_size))
 
     # benchmark time
     iter = 100
@@ -49,7 +50,7 @@ def test_gather_scatter(dataset, feature_size, device):
 
 
 if __name__ == '__main__':
-    dataset = 'cora'
+    dataset = 'ogbl-collab'
     feature_size = 64
     device = "cuda"
     test_gather_scatter(dataset, feature_size, device)

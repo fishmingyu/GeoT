@@ -43,6 +43,7 @@ class Dataset:
         print("Dataset: ", self.name)
         self.edge_index = graph.edge_index.to(self.device)
         self.num_edges = graph.num_edges
+        self.size = graph.num_nodes
 
         idx = self.edge_index[1]
         sorted_idx = torch.argsort(idx)
