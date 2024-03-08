@@ -9,12 +9,14 @@
 using namespace at::native;
 
 // src_index [nnz]
+// weight [nnz]
 // src [key, nnz]
 template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
 void gather_scatter_sr_sorted(const at::Tensor &src_index,
                               const at::Tensor &dst_index,
-                              const at::Tensor &src, const at::Tensor &dst) {
+                              const at::Tensor &weight, const at::Tensor &src,
+                              const at::Tensor &dst) {
   const auto nnz = src_index.size(0);
   const auto N = src.size(1);
   auto src_indices = src_index.data_ptr<int64_t>();
