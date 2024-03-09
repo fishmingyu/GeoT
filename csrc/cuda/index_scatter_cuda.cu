@@ -1,6 +1,6 @@
 #include "header_cuda.h"
-#include "index_scatter_base.h"
-#include "index_scatter_rule.h"
+#include "./wrapper/index_scatter_base.h"
+#include "./wrapper/index_scatter_rule.h"
 
 template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>

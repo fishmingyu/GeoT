@@ -8,3 +8,4 @@ __pycache__
 .DS_Store
 benchmark_mtx
 *.csv
+.clang-format

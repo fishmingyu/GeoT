@@ -45,7 +45,7 @@ def get_extensions():
         nvcc_flags += ['-O2']
         extra_compile_args['nvcc'] = nvcc_flags
 
-    names = ['index_scatter', 'gather_scatter']
+    names = ['index_scatter', 'gather_scatter', 'gather_weight_scatter']
     sources = main_files
 
     for name in names:

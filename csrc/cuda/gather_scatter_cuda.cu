@@ -1,5 +1,5 @@
-#include "gather_scatter_base.h"
-#include "gather_scatter_rule.h"
+#include "./wrapper/gather_scatter_base.h"
+#include "./wrapper/gather_scatter_rule.h"
 #include "header_cuda.h"
 
 void gather_scatter_sorted_dispatch(const at::Tensor &src_index,

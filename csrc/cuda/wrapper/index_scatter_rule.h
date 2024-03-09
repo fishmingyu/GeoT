@@ -1,4 +1,3 @@
-
 #pragma once
 #include "index_scatter_base.h"
 template <typename scalar_t, ReductionType reduce>

@@ -19,12 +19,10 @@ RSync: sync threads group
 */
 template <typename ValueType, int NPerThread, int NThreadY, int NnzPerThread,
           int RNum, int RSync>
-__global__ void gather_weight_scatter_pr_sorted_kernel(const int nnz, const int N,
-                                                const int64_t *src_indices,
-                                                const int64_t *dst_indices,
-                                                const ValueType *weight,
-                                                const ValueType *src,
-                                                ValueType *dst) {
+__global__ void gather_weight_scatter_pr_sorted_kernel(
+    const int nnz, const int N, const int64_t *src_indices,
+    const int64_t *dst_indices, const ValueType *weight, const ValueType *src,
+    ValueType *dst) {
   int lane_id = (threadIdx.x % RSync);
   int Nnz_tile_id = blockIdx.x * RNum + threadIdx.x / RSync;
   int stride = RSync;
@@ -45,7 +43,7 @@ __global__ void gather_weight_scatter_pr_sorted_kernel(const int nnz, const int 
   int nz_id = nz_start + lane_id;
   for (int nzloop = 0; nzloop < NnzPerThread; nzloop++, nz_id += stride) {
     if (nz_id < nnz) {
-      src_id = nz_id;   // Feature is sorted
+      src_id = nz_id;    // Feature is sorted
       v = weight[nz_id]; // value is set to 1
       key = dst_indices[nz_id];
     } else {
@@ -119,12 +117,10 @@ RSync: sync threads group = 1
 // src[src_keys, N], dst[dst_keys, N]
 template <typename ValueType, int NPerThread, int NThreadX, int NnzPerThread,
           int NnzThreadY>
-__global__ void gather_weight_scatter_sr_sorted_kernel(const int nnz, const int N,
-                                                const int64_t *src_indices,
-                                                const int64_t *dst_indices,
-                                                const ValueType *weight,
-                                                const ValueType *src,
-                                                ValueType *dst) {
+__global__ void gather_weight_scatter_sr_sorted_kernel(
+    const int nnz, const int N, const int64_t *src_indices,
+    const int64_t *dst_indices, const ValueType *weight, const ValueType *src,
+    ValueType *dst) {
   int lane_id = threadIdx.x;
   int nnz_id = threadIdx.y;
   int nnz_group_id = blockIdx.x;
