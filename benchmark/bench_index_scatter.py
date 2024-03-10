@@ -52,14 +52,13 @@ def test_index_scatter(file, dataset, feature_size, device):
     t2 = timeit(pyg_segment_coo, iter, idx, src)
     t3 = timeit(torch_scatter_reduce, iter, idx, src)
     t4 = timeit(index_scatter_reduce, iter, idx, src)
-    t5 = timeit(torch_index_reduce, iter, idx, src)
     # :.4f 
-    file.write(f"{t1:.4f},{t2:.4f},{t3:.4f},{t4:.4f},{t5:.4f}")
+    file.write(f"{t1:.4f},{t2:.4f},{t3:.4f},{t4:.4f}")
 
 
 if __name__ == '__main__':
-    datasets = ['cora', 'citeseer', 'pubmed', 'amazon_photo', 'ppi', 'yelp', 'ogbn-arxiv', 'ogbl-collab']
-    feature_size = [4, 8, 16, 32, 64, 128]
+    datasets = ['cora', 'citeseer', 'pubmed', 'amazon_photo', 'ppi', 'flickr', 'ogbn-arxiv', 'ogbl-collab']
+    feature_size = [1, 2, 4, 8, 16, 32, 64, 128]
     device = "cuda"
     # write benchmark result to csv file
     with open("benchop_index_scatter.csv", "w") as file:

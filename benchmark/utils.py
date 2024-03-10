@@ -27,8 +27,8 @@ class Dataset:
         elif self.name == 'ppi':
             dataset = datasets.PPI(root='./data/PPI')
             graph = dataset[0]
-        elif self.name == 'yelp':
-            dataset = datasets.Yelp(root='./data/Yelp')
+        elif self.name == 'flickr':
+            dataset = datasets.Yelp(root='./data/Flickr')
             graph = dataset[0]
         elif self.name == 'ogbn-arxiv':
             dataset = PygNodePropPredDataset(name='ogbn-arxiv', root='./data/')
