@@ -36,6 +36,9 @@ class Dataset:
         elif self.name == 'ogbl-collab':
             dataset = PygLinkPropPredDataset(name='ogbl-collab', root='./data/')
             graph = dataset[0]
+        elif self.name == 'reddit2':
+            dataset = datasets.Reddit2(root='./data/Reddit2')
+            graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
         print("Dataset: ", self.name)

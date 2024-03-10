@@ -72,7 +72,7 @@ def test_gather_scatter(file, dataset, feature_size, device):
 
 
 if __name__ == '__main__':
-    datasets = ["cora", "citeseer", "pubmed", "amazon_photo", "ppi", "flickr", "ogbn-arxiv", "ogbl-collab"]
+    datasets = ["cora", "citeseer", "pubmed", "amazon_photo", "ppi", "flickr", "ogbn-arxiv", "ogbl-collab", 'reddit2']
     features = [4, 8, 16, 32, 64, 128]
     device = "cuda"
     with open("benchop_spmm.csv", "w") as file:
@@ -81,3 +81,4 @@ if __name__ == '__main__':
                 file.write(f"{dataset},{feature},")
                 test_gather_scatter(file, dataset, feature, device)
                 file.write("\n")
+                

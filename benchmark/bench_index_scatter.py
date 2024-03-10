@@ -62,7 +62,7 @@ if __name__ == '__main__':
     device = "cuda"
     # write benchmark result to csv file
     with open("benchop_index_scatter.csv", "w") as file:
-        file.write("dataset,feature_size,pyg_scatter_reduce,pyg_segment_coo,torch_scatter_reduce,index_scatter_reduce,torch_index_reduce\n")
+        file.write("dataset,feature_size,pyg_scatter_reduce,pyg_segment_coo,torch_scatter_reduce,index_scatter_reduce\n")
         for d in datasets:
             for f in feature_size:
                 print(f"Testing {d} with feature size {f}")

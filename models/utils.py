@@ -9,6 +9,7 @@ import os
 import torch_geometric.transforms as T
 from torch_geometric import EdgeIndex
 import torch_geometric
+import time
 
 class Dataset:
     def __init__(self, name: str, device):
@@ -17,20 +18,14 @@ class Dataset:
         self.get_dataset()
 
     def get_dataset(self):
-        if self.name == 'yelp':
-            dataset = datasets.Yelp(root='./data/Yelp')
-            graph = dataset[0]
-        elif self.name == 'ogbn-arxiv':
+        if self.name == 'ogbn-arxiv':
             dataset = PygNodePropPredDataset(name='ogbn-arxiv', root='./data/')
-            graph = dataset[0]
-        elif self.name == 'ogbn-products':
-            dataset = PygNodePropPredDataset(name='ogbn-products', root='./data/')
-            graph = dataset[0]
-        elif self.name == 'ogbn-mag':
-            dataset = PygNodePropPredDataset(name='ogbn-mag', root='./data/')
             graph = dataset[0]
         elif self.name == 'flickr':
             dataset = datasets.Flickr(root='./data/Flickr')
+            graph = dataset[0]
+        elif self.name == 'reddit2':
+            dataset = datasets.Reddit2(root='./data/Reddit2')
             graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
@@ -50,3 +45,17 @@ class Dataset:
         self.in_channels = graph.num_features if graph.x is not None else 32
         self.num_classes = int(graph.y.max() + 1)
         
+
+def timeit(model, iter, x, data):
+    # benchmark time
+    t = torch.zeros(iter)
+    for i in range(iter):
+        torch.cuda.synchronize()
+        t0 = time.time()
+        model(x, data)
+        torch.cuda.synchronize()
+        t1 = time.time()
+        t[i] = t1 - t0
+    print(f"Average time: {t.mean():.6f} s")
+    return t
+

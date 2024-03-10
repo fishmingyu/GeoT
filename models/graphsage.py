@@ -12,7 +12,7 @@ from torch_geometric.nn.conv import (
     SAGEConv,
 )
 from utils import Dataset
-
+from utils import timeit
 
 class GraphSAGE(BasicGNN):
     supports_edge_weight: Final[bool] = False
@@ -54,10 +54,10 @@ if __name__ == "__main__":
         data = d.adj_t
     else:
         data = d.edge_index
-    print(data)
-    # benchmark breakdown
-    # use torch profiler to profile the time taken for forward pass
-    with torch.autograd.profiler.profile(use_cuda=True) as prof:
-        model(d.x, data)
-    print(prof.key_averages().table(sort_by="self_cuda_time_total"))
     
+    # benchmark time
+    iter = 100
+    t = timeit(model, iter, d.x, data)
+    # write with 'a' to append to the file
+    with open('model_result.csv', 'a') as file:
+        file.write(f"GraphSAGE,{args.dataset},{args.hidden_channels},{args.sparse},{args.GS},{t.mean():.6f}\n")
