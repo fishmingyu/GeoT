@@ -16,7 +16,7 @@ at::Tensor gather_weight_scatter_cuda_impl(at::Tensor src_index,
   output_shape[0] = max_index + 1;
   auto output = torch::zeros(output_shape, src.options());
   // call the cuda kernel if the input tensor is on cuda
-  gather_weight_scatter_cuda(src_index, dst_index, src, weight, output, reduce);
+  gather_weight_scatter_cuda(src_index, dst_index, weight, src, output, reduce);
   return output;
 }
 

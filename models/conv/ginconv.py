@@ -15,10 +15,10 @@ from torch_geometric.typing import (
     Size,
     SparseTensor,
 )
-from torch_geometric.utils import spmm
+from .spmm import spmm_no_weight
 
 
-class GINConv(MessagePassing):
+class GINConv_GS(MessagePassing):
     r"""The graph isomorphism operator from the `"How Powerful are
     Graph Neural Networks?" <https://arxiv.org/abs/1810.00826>`_ paper.
 
@@ -97,7 +97,7 @@ class GINConv(MessagePassing):
     def message_and_aggregate(self, adj_t: Adj, x: OptPairTensor) -> Tensor:
         if isinstance(adj_t, SparseTensor):
             adj_t = adj_t.set_value(None, layout=None)
-        return spmm(adj_t, x[0], reduce=self.aggr)
+        return spmm_no_weight(adj_t, x[0], reduce=self.aggr)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(nn={self.nn})'

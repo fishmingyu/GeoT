@@ -9,10 +9,10 @@ from torch_geometric.nn.aggr import Aggregation, MultiAggregation
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense.linear import Linear
 from torch_geometric.typing import Adj, OptPairTensor, Size, SparseTensor
-from torch_geometric.utils import spmm
+from .spmm import spmm_no_weight
 
 
-class SAGEConv(MessagePassing):
+class SAGEConv_GS(MessagePassing):
     r"""The GraphSAGE operator from the `"Inductive Representation Learning on
     Large Graphs" <https://arxiv.org/abs/1706.02216>`_ paper.
 
@@ -151,7 +151,7 @@ class SAGEConv(MessagePassing):
     def message_and_aggregate(self, adj_t: Adj, x: OptPairTensor) -> Tensor:
         if isinstance(adj_t, SparseTensor):
             adj_t = adj_t.set_value(None, layout=None)
-        return spmm(adj_t, x[0], reduce=self.aggr)
+        return spmm_no_weight(adj_t, x[0], reduce=self.aggr)
 
     def __repr__(self) -> str:
         return (f'{self.__class__.__name__}({self.in_channels}, '

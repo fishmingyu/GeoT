@@ -21,12 +21,11 @@ from torch_geometric.utils import add_self_loops as add_self_loops_fn
 from torch_geometric.utils import (
     is_torch_sparse_tensor,
     scatter,
-    spmm,
     to_edge_index,
 )
 from torch_geometric.utils.num_nodes import maybe_num_nodes
 from torch_geometric.utils.sparse import set_sparse_value
-
+from .spmm import spmm_weight
 
 def gcn_norm(  # noqa: F811
     edge_index: Adj,
@@ -99,7 +98,7 @@ def gcn_norm(  # noqa: F811
     return edge_index, edge_weight
 
 
-class GCNConv(MessagePassing):
+class GCNConv_GS(MessagePassing):
     r"""The graph convolutional operator from the `"Semi-supervised
     Classification with Graph Convolutional Networks"
     <https://arxiv.org/abs/1609.02907>`_ paper.
@@ -257,4 +256,4 @@ class GCNConv(MessagePassing):
         return x_j if edge_weight is None else edge_weight.view(-1, 1) * x_j
 
     def message_and_aggregate(self, adj_t: Adj, x: Tensor) -> Tensor:
-        return spmm(adj_t, x, reduce=self.aggr)
+        return spmm_weight(adj_t, x, reduce=self.aggr)

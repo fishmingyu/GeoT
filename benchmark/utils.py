@@ -3,7 +3,6 @@ from torch_geometric.utils import from_dgl
 import torch
 from ogb.nodeproppred import PygNodePropPredDataset
 from ogb.linkproppred import PygLinkPropPredDataset
-import dgl
 
 
 class Dataset:
@@ -28,10 +27,9 @@ class Dataset:
         elif self.name == 'ppi':
             dataset = datasets.PPI(root='./data/PPI')
             graph = dataset[0]
-        elif self.name == 'yelp':  # due to PyG's broken link, we use dgl's dataset
-            dataset = dgl.data.YelpDataset()
-            dgl_g = dataset[0]
-            graph = from_dgl(dgl_g)
+        elif self.name == 'yelp':
+            dataset = datasets.Yelp(root='./data/Yelp')
+            graph = dataset[0]
         elif self.name == 'ogbn-arxiv':
             dataset = PygNodePropPredDataset(name='ogbn-arxiv', root='./data/')
             graph = dataset[0]
@@ -43,7 +41,7 @@ class Dataset:
         print("Dataset: ", self.name)
         self.edge_index = graph.edge_index.to(self.device)
         self.num_edges = graph.num_edges
-        self.size = graph.num_nodes
+        self.num_nodes = graph.num_nodes
 
         idx = self.edge_index[1]
         sorted_idx = torch.argsort(idx)
