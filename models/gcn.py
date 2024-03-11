@@ -56,4 +56,4 @@ if __name__ == "__main__":
     t = timeit(model, iter, d.x, data)
     # write with 'a' to append to the file
     with open('model_result.csv', 'a') as file:
-        file.write(f"GraphSAGE,{args.dataset},{args.hidden_channels},{args.sparse},{args.GS},{t.mean():.6f}\n")
+        file.write(f"GCN,{args.dataset},{args.hidden_channels},{args.sparse},{args.GS},{t.mean():.6f}\n")

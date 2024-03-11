@@ -36,6 +36,8 @@ class Dataset:
         col = self.edge_index[1]
         # stack the row and col to create the edge_index
         self.adj_t = EdgeIndex(torch.stack([col, row], dim=0)).to_sparse_tensor()
+        # check adj_t is sorted by row
+        assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
         if graph.x is not None:
             self.x = graph.x.to(self.device)
         else:
