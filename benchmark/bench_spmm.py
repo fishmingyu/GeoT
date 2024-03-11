@@ -53,7 +53,7 @@ def test_gather_scatter(file, dataset, feature_size, device):
     rowptr = to_rowptr(row, sparse_size).to(device)
     # use rowptr, col, value to create sparse tensor for torch 
     # dgsparse need int type for rowptr and col
-    adj = torch.sparse_csr_tensor(rowptr.int(), col.int(), value, (sparse_size, sparse_size))
+    adj = torch.sparse_csr_tensor(rowptr, col, value, (sparse_size, sparse_size))
     # dgsparse_adj = dgsparse.SparseTensor.from_torch_sparse_csr_tensor(
     #         adj.detach(), True, requires_grad=False)
 
