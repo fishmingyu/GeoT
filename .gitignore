@@ -9,3 +9,4 @@ __pycache__
 benchmark_mtx
 *.csv
 .clang-format
+__MACOSX
