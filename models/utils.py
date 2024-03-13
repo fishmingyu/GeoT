@@ -8,6 +8,7 @@ import numpy as np
 import os
 import torch_geometric.transforms as T
 from torch_geometric import EdgeIndex
+from torch_geometric.typing import SparseTensor
 import torch_geometric
 import time
 
@@ -29,13 +30,16 @@ class Dataset:
             graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
-        self.edge_index = graph.edge_index.to(self.device)
+        edge_index = graph.edge_index.to(self.device)
         # add self loop to edge_index
-        self.edge_index, _ = torch_geometric.utils.add_self_loops(self.edge_index)
+        edge_index, _ = torch_geometric.utils.add_self_loops(edge_index)
+        self.edge_index = edge_index[:, torch.argsort(edge_index[1])]
+
         row = self.edge_index[0]
         col = self.edge_index[1]
-        # stack the row and col to create the edge_index
-        self.adj_t = EdgeIndex(torch.stack([col, row], dim=0)).to_sparse_tensor()
+        # create new transpose edge_index
+        self.edge_index_t = torch.stack([col, row], dim=0)
+        self.adj_t = SparseTensor.from_edge_index(self.edge_index_t, is_sorted=True)
         # check adj_t is sorted by row
         assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
         if graph.x is not None:
