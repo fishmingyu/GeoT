@@ -40,6 +40,9 @@ class Dataset:
         # create new transpose edge_index
         self.edge_index_t = torch.stack([col, row], dim=0)
         self.adj_t = SparseTensor.from_edge_index(self.edge_index_t, is_sorted=True)
+        # materialize csr
+        self.adj_t.csr()
+        
         # check adj_t is sorted by row
         assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
         if graph.x is not None:
