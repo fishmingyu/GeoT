@@ -1,47 +1,55 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
-csv_path = "../../benchmark/benchop_spmm.csv"
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
+csv_path = "../SC24-Result/A100/benchop_spmm.csv"
 
-# Assuming 'csv_path' is the path to your CSV file and it's already defined.
-header = ["dataset", "feature_size", "geos", "torch(cusparse)", "pyg_sparse"]
+header = ["dataset", "feature_size", "geos", "cusparse", "pyg_sparse"]
 df = pd.read_csv(csv_path, header=None, names=header)
 
-# Setting up the plot
-fig, axs = plt.subplots(3, 3, figsize=(15, 15), constrained_layout=True)
-fig.suptitle('SPMM Benchmark (Normalized by GEOS)')
+# Filter the dataframe to include only feature sizes 16, 32, and 64
+df_filtered = df[df['feature_size'].isin([16, 32, 64])]
 
-datasets = df["dataset"].unique()
-width = 0.25  # Width of the bars
+df_melted = pd.melt(df_filtered, id_vars=["dataset", "feature_size"], value_vars=["cusparse", "pyg_sparse", "geos"], var_name="Method")
 
-for i, dataset in enumerate(datasets):
-    sub_df = df[df["dataset"] == dataset]
-    ax = axs[i // 3, i % 3]
-    ax.set_title(dataset)
+# Normalize by 'torch(cusparse)' for each dataset and feature size
+df_melted['normalized_speedup'] = df_melted.groupby(['dataset', 'feature_size'])['value'].transform(lambda x: x / x.iloc[0] if x.name == 'cusparse' else x.iloc[0] / x)
 
-    # Calculate bar positions
-    r1 = np.arange(len(sub_df["feature_size"]))
-    r2 = [x + width for x in r1]
-    r3 = [x + width for x in r2]
+max_speedup = df_melted.groupby('feature_size')['normalized_speedup'].max()
 
-    # Normalize by 'geos'
-    geos_norm = sub_df["geos"] / sub_df["geos"]
-    torch_norm = sub_df["torch(cusparse)"] / sub_df["geos"]
-    pyg_sparse_norm = sub_df["pyg_sparse"] / sub_df["geos"]
+# Set global font to Arial (ensure Arial is available on your system)
+plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.size'] = 12  # Set a base font size
 
-    # Plotting the bars
-    ax.bar(r1, geos_norm, color='b', width=width, edgecolor='grey', label='GEOS')
-    ax.bar(r2, torch_norm, color='r', width=width, edgecolor='grey', label='Torch(cusparse)')
-    ax.bar(r3, pyg_sparse_norm, color='g', width=width, edgecolor='grey', label='PyG Sparse')
+# remove the background grid
+sns.set_theme(style="ticks")  # Set the Seaborn style
 
-    # Adding labels
-    ax.set_xlabel('Feature Size', fontweight='bold')
-    ax.set_xticks([r + width for r in range(len(sub_df["feature_size"]))])
-    ax.set_xticklabels(sub_df["feature_size"])
-    ax.legend()
+# Create a barplot with FacetGrid
+g = sns.FacetGrid(df_melted, col="feature_size", col_wrap=1, height=3, aspect=1.6)
+g.map_dataframe(sns.barplot, x="dataset", y="normalized_speedup", hue="Method", palette="mako")
+# leave x axis label empty
+g.set_xlabels('')
+# Set y-axis label
+g.set_ylabels("Normalized Speedup")
+g.set_titles("Feature Size = {col_name}", fontsize=15)
+g.add_legend(title="Method", title_fontsize='13', fontsize='11')
 
-fig.savefig("benchmark_spmm.png")
+
+# add the title
+g.figure.suptitle('SpMM Speedup (Normalized by cuSPARSE)', fontsize=17, fontweight='bold')
+plt.subplots_adjust(top=0.9)
+
+# Rotate x-axis labels
+for ax in g.axes.flatten():
+    ax.tick_params(axis='x', labelrotation=50)
+    ax.xaxis.label.set_size(12)  # Adjust font size of x-axis labels
+    # Dynamically set y-axis limits based on maximum speedup for each feature size
+    feature_size = int(ax.get_title().split('=')[1].strip())
+    ax.set_ylim(0, max_speedup[feature_size] * 1.1)  # Adjust 1.1 for padding
+
+
+# Adjust layout to prevent clipping of x-axis labels
+g.figure.subplots_adjust(bottom=0.12)
+
+# Save the plot
+plt.savefig("spmm_speedup.png", dpi=300)  # Increase dpi for higher resolution if needed
