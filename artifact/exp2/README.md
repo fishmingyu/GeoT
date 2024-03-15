@@ -11,7 +11,11 @@ python run_ablation.py
 python run_eval.py
 ```
 
-Then we draw the figure
+> Note that the ablation result may vary. To keep result in reasonable way, we parser the rule directly to eval benchmark, and treat it as he performance of decision tree.
+
+## Draw figure
 ```bash
+python feature_extract.py
+python query_rule.py
 python ablation_rule.py
 ```
