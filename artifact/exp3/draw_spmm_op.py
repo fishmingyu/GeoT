@@ -52,4 +52,4 @@ for ax in g.axes.flatten():
 g.figure.subplots_adjust(bottom=0.12)
 
 # Save the plot
-plt.savefig("spmm_speedup.png", dpi=300)  # Increase dpi for higher resolution if needed
+plt.savefig("spmm_speedup.pdf", dpi=300)  # Increase dpi for higher resolution if needed

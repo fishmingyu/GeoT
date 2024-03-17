@@ -41,7 +41,7 @@ g.map_dataframe(sns.barplot, x="feature_size", y="normalized_speedup", hue="meth
 # Improve the legend
 g.add_legend(title="Method", title_fontsize='13', label_order=method_order, fontsize='11')
 plt.subplots_adjust(top=0.9)
-g.figure.suptitle('Segment Reduce Speedup (Normalized by PyG Scatter Reduce)', fontsize=17, fontweight='bold')
+g.figure.suptitle('Segment Reduce Speedup (Normalized by PyG Scatter Reduce)', fontsize=18, fontweight='bold')
 
 # Adjust labels and titles
 for ax in g.axes.flatten():
@@ -55,4 +55,4 @@ for ax in g.axes.flatten():
     ax.tick_params(axis='y', labelsize=12)  # Adjust y-tick label size
     ax.set_title(ax.get_title(), fontsize=15)  # Adjust subplot title size 
 
-plt.savefig("index_scatter_benchmark.png")
+plt.savefig("index_scatter_benchmark.pdf", dpi=300)  # Save the plot with higher resolution if needed

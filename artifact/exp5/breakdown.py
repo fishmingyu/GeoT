@@ -88,7 +88,7 @@ df_reddit2_pyg['Tech'] = 'PyG(sparse)'
 df_reddit2_GS['Tech'] = 'GeoS'
 
 df_combined_reddit2 = pd.concat([df_reddit2_pyg, df_reddit2_GS], ignore_index=True)
-df_combined_reddit2['Dataset'] = 'Reddit'
+df_combined_reddit2['Dataset'] = 'Reddit2'
 
 
 # do the same process for the ogbn-arxiv dataset
@@ -130,9 +130,10 @@ df_long = pd.melt(df_combined, id_vars=['Tech', 'Dataset'], var_name='Category',
 plot = (
     so.Plot(df_long, x="Tech", y="Percentage", color="Category")
     .facet("Dataset")
-    .add(so.Bar(edgewidth=0), so.Stack()).scale(color="mako")
+    .add(so.Bar(edgewidth=0, width=0.6), so.Stack())
+    .scale(color="mako")
     .label(legend="Category", x="", y="Percentage (%)")
-    .layout(size=(12, 6))
+    # .layout(size=(12, 6))
 )
 
 from matplotlib import font_manager
@@ -155,10 +156,11 @@ theme_dict = {
     'xtick.labelsize': 16,
     'ytick.labelsize': 16,
     'legend.fontsize': 14,
+    'legend.title_fontsize': 16,
     'legend.edgecolor': 'white',
     'legend.fancybox': False,
+    'legend.loc': 'upper center',
+    'figure.figsize': (12, 6),
 }
 so.Plot.config.theme.update(theme_dict)
-# the save function has bugs
-plot.show()
-# and we will save the plot manually
+plot.save("breakdown.pdf", bbox_inches='tight')
