@@ -73,7 +73,7 @@ fig, axs = plt.subplots(1, 2, figsize=(10, 4.2))
 # Example plotting code for the first subplot
 sns.stripplot(x='GPU', y='normalized_speedup', data=df_combined, ax=axs[0], hue='GPU', palette='mako')
 axs[0].set_title('Segment Reduce', fontsize=16, fontweight='bold', fontname='Arial')
-axs[0].set_ylabel('Normalized Speedup', fontsize=14, fontweight='bold', fontname='Arial')
+axs[0].set_ylabel('Normalized Speedup', fontsize=14,  fontname='Arial')
 axs[0].tick_params(axis='x', labelsize=12)
 axs[0].tick_params(axis='y', labelsize=12)
 
