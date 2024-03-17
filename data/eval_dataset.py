@@ -61,7 +61,7 @@ class Dataset:
         print(f"Finish storing {self.name} idx")
 
 if __name__ == '__main__':
-    ml_datasets = ['pubmed', 'citeseer', 'cora', 'amazon_photo', 'ppi', 'yelp', 'ogbn-arxiv', 'ogbl-collab']
+    ml_datasets = ['pubmed', 'citeseer', 'cora', 'amazon_photo', 'ppi', 'flickr', 'ogbn-arxiv', 'ogbl-collab']
 
     device = "cpu"
     
