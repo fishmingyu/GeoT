@@ -32,10 +32,9 @@ class Dataset:
         elif self.name == 'ppi':
             dataset = datasets.PPI(root='./data/PPI')
             graph = dataset[0]
-        elif self.name == 'yelp':  # due to PyG's broken link, we use dgl's dataset
-            dataset = dgl.data.YelpDataset()
-            dgl_g = dataset[0]
-            graph = from_dgl(dgl_g)
+        elif self.name == 'flickr':
+            dataset = datasets.Flickr(root='./data/Flickr')
+            graph = dataset[0]
         elif self.name == 'ogbn-arxiv':
             dataset = PygNodePropPredDataset(name='ogbn-arxiv', root='./data/')
             graph = dataset[0]
