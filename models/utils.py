@@ -30,21 +30,17 @@ class Dataset:
             graph = dataset[0]
         else:
             raise KeyError('Unknown dataset {}.'.format(self.name))
-        edge_index = graph.edge_index.to(self.device)
+        self.edge_index = graph.edge_index.to(self.device)
         # add self loop to edge_index
-        edge_index, _ = torch_geometric.utils.add_self_loops(edge_index)
-        self.edge_index = edge_index[:, torch.argsort(edge_index[1])]
-
+        self.edge_index, _ = torch_geometric.utils.add_self_loops(self.edge_index)
         row = self.edge_index[0]
         col = self.edge_index[1]
-        # create new transpose edge_index
-        self.edge_index_t = torch.stack([col, row], dim=0)
-        self.adj_t = SparseTensor.from_edge_index(self.edge_index_t, is_sorted=True)
-        # materialize the colptr and csr2csc
-        self.adj_t.storage.colptr()
-        self.adj_t.storage.csr2csc()
-        # check adj_t is sorted by row
+        # stack the row and col to create the edge_index
+        tmp = EdgeIndex(torch.stack([col, row], dim=0)).sort_by('row')[0]
+        self.adj_t = tmp.to_sparse_tensor()
+        assert tmp.is_sorted_by_row == True
         assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
+        # check adj_t is sorted by row
         if graph.x is not None:
             self.x = graph.x.to(self.device)
         else:
