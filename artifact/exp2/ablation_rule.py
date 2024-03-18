@@ -76,10 +76,10 @@ plt.rcParams['font.size'] = 12
 
 # draw the joint plot
 g = sns.JointGrid(data=speedup_df, x='dtree_speedup', y='tune_speedup', space=0)
-g = g.plot_joint(sns.regplot, color='#38a9ac', scatter_kws={'s': 45, 'alpha': 0.3})
-g = g.plot_marginals(sns.histplot, kde=True, color='#38a9ac')
+g = g.plot_joint(sns.regplot, color='#40b7ad', scatter_kws={'s': 45, 'alpha': 0.3})
+g = g.plot_marginals(sns.histplot, kde=True, color='#40b7ad')
 
 # set the labels and titles
 g.set_axis_labels('Speedup of DTREE', 'Speedup of Tuning', fontsize=14)
 
-plt.savefig('speedup_jointplot.pdf', dpi=300)
+plt.savefig('speedup_jointplot.png', dpi=300)

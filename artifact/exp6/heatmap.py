@@ -3,16 +3,42 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load the data
-df = pd.read_csv('../SC24-Results/Ablation/sr_result.csv')
+# /mnt/disk3/xinchen/projects/torch_index_scatter/benchmark/benchmark_cpp/../../data/eval_data/amazon_photo_idx.npy,1,1,8,4,8,0.00904704,26.3249
+header = ['dataset', 'features', 'config1', 'config2', 'config3', 'config4', 'time', 'gflops']
+df = pd.read_csv('../SC24-Result/Ablation/sr_result.csv', header=None, names=header)
 
 # split the dataset column
-"""
-/mnt/disk3/xinchen/projects/torch_index_scatter/benchmark/benchmark_cpp/../../data/eval_data/amazon_photo_idx.npy
---> amazon_photo
-"""
-df['dataset'] = df['dataset'].str.split('/').str[-1].str.split('_').str[0]
+df['dataset'] = df['dataset'].str.split('/').str[-1].str.split('_idx.npy').str[0]
 
-# extract amazon_photo dataset
-df = df[df['dataset'] == 'amazon_photo']
+# select the dataset amazon_photo and features == 64
+df_amz = df[(df['dataset'] == 'amazon_photo') & (df['features'] == 64)]
 
-print(df)
+# select the dataset ogbn-arxiv and features == 64
+df_arxiv = df[(df['dataset'] == 'ogbn-arxiv') & (df['features'] == 64)]
+
+# set config1 == 1, config4 == 4, we draw the heatmap for the gflops
+df_amz = df_amz[(df_amz['config1'] == 1) & (df_amz['config4'] == 4)]
+df_arxiv = df_arxiv[(df_arxiv['config1'] == 1) & (df_arxiv['config4'] == 4)]
+
+# pivot the table
+df_amz = df_amz.pivot(index='config2', columns='config3', values='gflops')
+df_arxiv = df_arxiv.pivot(index='config2', columns='config3', values='gflops')
+
+# plot the heatmap
+plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.size'] = 10
+fig, ax = plt.subplots(2, 1, figsize=(6, 5))
+
+
+sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".3f", cmap='GnBu')
+ax[0].set_title('Amazon-Photo')
+ax[0].set_ylabel('config2')
+ax[0].set_xlabel('')
+sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap='GnBu')
+ax[1].set_title('ogbn-arxiv')
+ax[1].set_xlabel('config3')
+ax[1].set_ylabel('config2')
+
+plt.tight_layout()
+
+plt.savefig('heatmap.png', dpi=300)
