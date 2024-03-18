@@ -38,6 +38,9 @@ class Dataset:
         # stack the row and col to create the edge_index
         tmp = EdgeIndex(torch.stack([col, row], dim=0)).sort_by('row')[0]
         self.adj_t = tmp.to_sparse_tensor()
+        # materialize
+        self.adj_t.storage.csr2csc()
+        self.adj_t.storage.colptr()
         assert tmp.is_sorted_by_row == True
         assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
         # check adj_t is sorted by row
