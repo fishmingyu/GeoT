@@ -1,5 +1,7 @@
 # Efficient Index Scatter Reduce for Geometric Deep Learning
 
+## This branch aims to develop and optimize the same method on Intel Processors (CPU and GPU) 
+
 ## Motivation
 We have identified that although the scatter_reduce operation is a cornerstone in the construction of geometric deep learning systems, current deep learning frameworks have not optimized it effectively. This problem can be broken down into two main areas:
 
