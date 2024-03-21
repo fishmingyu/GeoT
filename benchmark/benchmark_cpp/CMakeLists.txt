@@ -9,7 +9,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}../../csrc)
 
 # Define the .cu file separately
-set(BENCHMARK_FILES benchmark_kernel.cu)
+#set(BENCHMARK_FILES benchmark_kernel.cu)
+set(BENCHMARK_FILES benchmark_kernel_cpu.cpp)
+
 set(ABLATION_FILES ablation.cu)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
