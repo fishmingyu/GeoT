@@ -13,9 +13,9 @@ df = pd.read_csv("../SC24-Result/A100/model_result.csv", header=None, names=head
 
 # if use_sparse == false, set method == 'PyG_Dense'
 # if use_sparse == true, and use_geo == false, set method == 'PyG_Sparse'
-# if use_sparse == true, and use_geo == true, set method == 'GeoS'
+# if use_sparse == true, and use_geo == true, set method == 'GeoT'
 
-df['Method'] = df.apply(lambda x: 'PyG_Dense' if x['use_sparse'] == False else ('PyG_Sparse' if x['use_geo'] == False else 'GeoS'), axis=1)
+df['Method'] = df.apply(lambda x: 'PyG_Dense' if x['use_sparse'] == False else ('PyG_Sparse' if x['use_geo'] == False else 'GeoT'), axis=1)
 
 # only leave the dataset, Method, and value columns
 
@@ -48,13 +48,14 @@ g.map_dataframe(sns.barplot, x="dataset", y="value", hue="Method", palette="mako
 # Remove the background grid and set styles
 sns.set_theme(style="ticks")
 plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 10
+plt.rcParams['font.size'] = 9
 
 # Set labels
 g.set_xlabels('')
 g.set_ylabels("Normalized Speedup")
 # legend font
-g.add_legend(title="Method", title_fontsize='11', fontsize='9')
+g.add_legend(title="Method", title_fontsize='9', fontsize='9')
+sns.move_legend(g, "right", bbox_to_anchor=(1, 0.5), ncol=1, fontsize=9, title_fontsize=9)
 
 # Iterate over axes to adjust y-axis limits independently
 for ax in g.axes.flatten():
@@ -72,4 +73,4 @@ for ax in g.axes.flatten():
 g.figure.subplots_adjust(bottom=0.25)
 
 # Save the plot
-plt.savefig("model_inference_speedup.pdf", dpi=300)
+plt.savefig("model_inference_speedup.pdf", dpi=300, bbox_inches='tight')  # Increase dpi for higher resolution if needed

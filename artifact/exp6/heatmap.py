@@ -29,15 +29,26 @@ plt.rcParams['font.family'] = 'Arial'
 plt.rcParams['font.size'] = 10
 fig, ax = plt.subplots(2, 1, figsize=(6, 5))
 
+# set mako palette
+color = sns.color_palette("GnBu", as_cmap=True)
 
-sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".3f", cmap='GnBu')
+
+sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".3f", cmap=color)
 ax[0].set_title('Amazon-Photo')
-ax[0].set_ylabel('config2')
+ax[0].set_ylabel('$T_N$')
 ax[0].set_xlabel('')
-sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap='GnBu')
+sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap=color)
 ax[1].set_title('ogbn-arxiv')
-ax[1].set_xlabel('config3')
-ax[1].set_ylabel('config2')
+ax[1].set_xlabel('$M_t$')
+ax[1].set_ylabel('$T_N$')
+
+# set font size of subfigure title
+for i in range(2):
+    ax[i].title.set_fontsize(14)
+    ax[i].title.set_fontweight('bold') 
+    # label size
+    ax[i].xaxis.label.set_fontsize(12)
+    ax[i].yaxis.label.set_fontsize(12)
 
 plt.tight_layout()
 

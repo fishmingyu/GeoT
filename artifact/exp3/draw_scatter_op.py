@@ -20,7 +20,7 @@ method_name_mapping = {
     "pyg_scatter_reduce": "pyg_scatter_reduce",
     "pyg_segment_coo": "pyg_segment_coo",  # This seems to be the same, adjust if needed
     "torch_scatter_reduce": "torch_scatter_reduce",
-    "index_scatter_reduce": "GeoS"
+    "index_scatter_reduce": "GeoT"
 }
 
 # Apply the mapping to the 'method' column
@@ -33,15 +33,18 @@ df_melted['normalized_speedup'] = df_melted.groupby(['dataset', 'feature_size'])
 sns.set_theme(style="whitegrid") # Set the Seaborn style
 # Set global font to Arial (ensure Arial is available on your system)
 plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 12  # Set a base font size
 
 g = sns.FacetGrid(df_melted, col="dataset", col_wrap=4, height=4, aspect=1.5)
 g.map_dataframe(sns.barplot, x="feature_size", y="normalized_speedup", hue="method", palette=color_palette, errorbar=None, order=feature_order, hue_order=method_order)
 
 # Improve the legend
-g.add_legend(title="Method", title_fontsize='13', label_order=method_order, fontsize='11')
+# g.add_legend(title="", title_fontsize=15, label_order=method_order, fontsize=13)
+# Adjust the legend position to upper center
+# sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 1.0), ncol=4, fontsize=14)
+
+plt.legend(title="", title_fontsize=15, fontsize=13, fancybox=False, shadow=False, edgecolor='white', loc='upper center')
 plt.subplots_adjust(top=0.9)
-g.figure.suptitle('Segment Reduce Speedup (Normalized by PyG Scatter Reduce)', fontsize=18, fontweight='bold')
+# g.figure.suptitle('Segment Reduce Speedup (Normalized by PyG Scatter Reduce)', fontsize=18, fontweight='bold')
 
 # Adjust labels and titles
 for ax in g.axes.flatten():
@@ -49,10 +52,10 @@ for ax in g.axes.flatten():
     feature_sizes = df["feature_size"].unique()
     ax.set_xticks(range(len(feature_sizes)))  # Ensure there's a tick for each feature size
     ax.set_xticklabels(feature_sizes, rotation=45)
-    ax.set_xlabel("Feature Size", fontsize=14, fontweight='normal')
-    ax.set_ylabel("Normalized Speedup", fontsize=14, fontweight='normal')
-    ax.tick_params(axis='x', labelsize=12)  # Adjust x-tick label size
-    ax.tick_params(axis='y', labelsize=12)  # Adjust y-tick label size
-    ax.set_title(ax.get_title(), fontsize=15)  # Adjust subplot title size 
+    ax.set_xlabel("Feature Size", fontsize=16, fontweight='normal')
+    ax.set_ylabel("Normalized Speedup", fontsize=16, fontweight='normal')
+    ax.tick_params(axis='x', labelsize=14)  # Adjust x-tick label size
+    ax.tick_params(axis='y', labelsize=14)  # Adjust y-tick label size
+    ax.set_title(ax.get_title(), fontsize=17, fontweight='bold')  # Adjust subplot title size 
 
-plt.savefig("index_scatter_benchmark.pdf", dpi=300)  # Save the plot with higher resolution if needed
+plt.savefig("index_scatter_benchmark.pdf", dpi=300, bbox_inches='tight')

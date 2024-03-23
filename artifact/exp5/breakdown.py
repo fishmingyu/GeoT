@@ -24,38 +24,30 @@ new_percent['SpMM'] = df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == '
 # then get the percentage
 new_percent['MatMul'] = df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'aten::addmm'].values[0] + df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'aten::mm'].values[0]
 
-# add up "aten::sort" and "torch_sparse::ind2ptr" using the tag "Format"
-# check "aten::sort" and "torch_sparse::ind2ptr" are in the value of the function column
-# then get the percentage
-new_percent['Format'] = df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'aten::sort'].values[0] + df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'torch_sparse::ind2ptr'].values[0]
-
 # use 100 - (SpMM + MatMul + Format) to calculate the "Others" percentage
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 # Create a new dataframe with the new percentages
 df_filckr_pyg = pd.DataFrame(new_percent, index=['filckr_pyg'])
 
-# now we process the GeoS data
+# now we process the GeoT data
 new_percent = {}
 
-# for GeoS, calculate the "torch_index_scatter::gather_scatter" percentage using the tag "SpMM"
+# for GeoT, calculate the "torch_index_scatter::gather_scatter" percentage using the tag "SpMM"
 new_percent['SpMM'] = df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
 
 # add up "aten::addmm" and "aten::mm" using the tag "MatMul"
 new_percent['MatMul'] = df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'aten::addmm'].values[0] + df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'aten::mm'].values[0]
 
-# No format percentage in GeoS
-new_percent['Format'] = 0
-
 # use 100 - (SpMM + MatMul + Format) to calculate the "Others" percentage
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 # Create a new dataframe with the new percentages
 df_filckr_GS = pd.DataFrame(new_percent, index=['filckr_GS'])
 
 
 df_filckr_pyg['Tech'] = 'PyG(sparse)'
-df_filckr_GS['Tech'] = 'GeoS'
+df_filckr_GS['Tech'] = 'GeoT'
 
 # Concatenate the two DataFrames vertically
 df_combined_filckr = pd.concat([df_filckr_pyg, df_filckr_GS], ignore_index=True)
@@ -70,8 +62,7 @@ new_percent = {}
 
 new_percent['SpMM'] = df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
 new_percent['MatMul'] = df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'aten::addmm'].values[0] + df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'aten::mm'].values[0]
-new_percent['Format'] = df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'aten::sort'].values[0] + df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'torch_sparse::ind2ptr'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_reddit2_pyg = pd.DataFrame(new_percent, index=['reddit2_pyg'])
 
@@ -79,13 +70,12 @@ new_percent = {}
 
 new_percent['SpMM'] = df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
 new_percent['MatMul'] = df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'aten::addmm'].values[0] + df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'aten::mm'].values[0]
-new_percent['Format'] = 0
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_reddit2_GS = pd.DataFrame(new_percent, index=['reddit2_GS'])
 
 df_reddit2_pyg['Tech'] = 'PyG(sparse)'
-df_reddit2_GS['Tech'] = 'GeoS'
+df_reddit2_GS['Tech'] = 'GeoT'
 
 df_combined_reddit2 = pd.concat([df_reddit2_pyg, df_reddit2_GS], ignore_index=True)
 df_combined_reddit2['Dataset'] = 'Reddit2'
@@ -99,8 +89,7 @@ new_percent = {}
 
 new_percent['SpMM'] = df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
 new_percent['MatMul'] = df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'aten::addmm'].values[0] + df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'aten::mm'].values[0]
-new_percent['Format'] = df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'aten::sort'].values[0] + df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'torch_sparse::ind2ptr'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_arxiv_pyg = pd.DataFrame(new_percent, index=['arxiv_pyg'])
 
@@ -108,13 +97,12 @@ new_percent = {}
 
 new_percent['SpMM'] = df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
 new_percent['MatMul'] = df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'aten::addmm'].values[0] + df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'aten::mm'].values[0]
-new_percent['Format'] = 0
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'] + new_percent['Format'])
+new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_arxiv_GS = pd.DataFrame(new_percent, index=['arxiv_GS'])
 
 df_arxiv_pyg['Tech'] = 'PyG(sparse)'
-df_arxiv_GS['Tech'] = 'GeoS'
+df_arxiv_GS['Tech'] = 'GeoT'
 
 df_combined_arxiv = pd.concat([df_arxiv_pyg, df_arxiv_GS], ignore_index=True)
 

@@ -82,4 +82,4 @@ g = g.plot_marginals(sns.histplot, kde=True, color='#40b7ad')
 # set the labels and titles
 g.set_axis_labels('Speedup of DTREE', 'Speedup of Tuning', fontsize=14)
 
-plt.savefig('speedup_jointplot.png', dpi=300)
+plt.savefig('speedup_jointplot.pdf', dpi=300)

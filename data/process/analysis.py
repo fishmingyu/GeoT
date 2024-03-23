@@ -39,6 +39,15 @@ sns.lineplot(x='feature_size', y='gflops', data=df_sr, marker='o', markersize=10
 # Plot PR data using lineplot with markers and color #38B2A3
 sns.lineplot(x='feature_size', y='gflops', data=df_pr, marker='^', markersize=10, label='PR', color='#38B2A3')
 
+# Annotate each point for SR data
+for index, row in df_sr.iterrows():
+    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.2f}", color='#007200', fontsize=9, ha='center')
+
+# Annotate each point for PR data
+for index, row in df_pr.iterrows():
+    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.2f}", color='#003366', fontsize=9, ha='center')
+
+
 
 # Add title and labels with larger font size
 plt.title('Feature Size vs GFLOPS', fontsize=18, fontname='Arial',fontweight='bold')
