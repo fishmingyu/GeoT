@@ -10,6 +10,9 @@ df = pd.read_csv(csv_path, header=None, names=header)
 # Filter the dataframe to include only feature sizes 16, 32, and 64
 df_filtered = df[df['feature_size'].isin([16, 32, 64, 128])]
 
+# if the dataset == amazon_photo, we rename it to amazon
+df_filtered['dataset'] = df_filtered['dataset'].apply(lambda x: 'amazon' if x == 'amazon_photo' else x)
+
 df_melted = pd.melt(df_filtered, id_vars=["dataset", "feature_size"], value_vars=["cusparse", "pyg_sparse", "geos"], var_name="Method")
 
 method_name_mapping = {
@@ -40,7 +43,8 @@ g.set_xlabels('')
 # Set y-axis label
 g.set_ylabels("Normalized Speedup")
 g.set_titles("Feature Size = {col_name}", fontsize=17, fontweight='bold')
-g.add_legend(title="Method", title_fontsize='13', fontsize='11')
+g.add_legend(title="", fontsize='12')
+sns.move_legend(g, "upper center", bbox_to_anchor=(0.65, 1.05), ncol=3, fontsize=12)
 
 
 # add the title
@@ -49,16 +53,15 @@ g.add_legend(title="Method", title_fontsize='13', fontsize='11')
 
 # Rotate x-axis labels
 for ax in g.axes.flatten():
-    ax.tick_params(axis='x', labelrotation=45)
+    ax.tick_params(axis='x', labelrotation=45, labelsize=12)  # Rotate x-axis labels
     ax.xaxis.label.set_size(12)  # Adjust font size of x-axis labels
     # Dynamically set y-axis limits based on maximum speedup for each feature size
     feature_size = int(ax.get_title().split('=')[1].strip())
     ax.set_ylim(0, max_speedup[feature_size] * 1.1)  # Adjust 1.1 for padding
     ax.set_title(ax.get_title(), fontsize=14, fontweight='bold')  # Adjust subplot title size
 
-
 # Adjust layout to prevent clipping of x-axis labels
 g.figure.subplots_adjust(bottom=0.2)
 
 # Save the plot
-plt.savefig("spmm_speedup.pdf", dpi=300)  # Increase dpi for higher resolution if needed
+plt.savefig("spmm_speedup.pdf", dpi=300, bbox_inches='tight')

@@ -34,25 +34,25 @@ df_pr = df_pr[df_pr['feature_size'] <= 32]
 plt.figure(figsize=(6, 6))
 
 # Plot SR data using lineplot with markers and color #B0F2BC
-sns.lineplot(x='feature_size', y='gflops', data=df_sr, marker='o', markersize=10, label='SR', color='#B0F2BC')
+sns.lineplot(x='feature_size', y='gflops', data=df_sr, marker='o', markersize=11, label='SR', color='#B0F2BC')
 
 # Plot PR data using lineplot with markers and color #38B2A3
-sns.lineplot(x='feature_size', y='gflops', data=df_pr, marker='^', markersize=10, label='PR', color='#38B2A3')
+sns.lineplot(x='feature_size', y='gflops', data=df_pr, marker='^', markersize=11, label='PR', color='#38B2A3')
 
 # Annotate each point for SR data
 for index, row in df_sr.iterrows():
-    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.2f}", color='#007200', fontsize=9, ha='center')
+    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.1f}", color='#007200', fontsize=11, ha='center', fontweight='bold')
 
 # Annotate each point for PR data
 for index, row in df_pr.iterrows():
-    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.2f}", color='#003366', fontsize=9, ha='center')
+    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.1f}", color='#003366', fontsize=11, ha='center', fontweight='bold')
 
 
 
 # Add title and labels with larger font size
 plt.title('Feature Size vs GFLOPS', fontsize=18, fontname='Arial',fontweight='bold')
-plt.xlabel('Feature Size', fontsize=14, fontname='Arial',fontweight='bold')
-plt.ylabel('GFLOPS', fontsize=14, fontname='Arial',fontweight='bold')
+plt.xlabel('Feature Size', fontsize=14, fontname='Arial')
+plt.ylabel('GFLOPS', fontsize=14, fontname='Arial')
 
 # Set legend font size
 plt.legend(fontsize=12)
@@ -62,4 +62,4 @@ plt.xscale('symlog', base=2)
 plt.xticks([1, 2, 4, 8, 16, 32], ['1', '2', '4', '8', '16', '32'], fontsize=12)
 plt.yticks(fontsize=12)
 # Save the plot as a high-resolution PDF
-plt.savefig('avg_gflops_feature_barplot.pdf', dpi=300)
+plt.savefig('avg_gflops_feature_barplot.pdf', dpi=300, bbox_inches='tight')

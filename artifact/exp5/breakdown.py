@@ -46,7 +46,7 @@ new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 df_filckr_GS = pd.DataFrame(new_percent, index=['filckr_GS'])
 
 
-df_filckr_pyg['Tech'] = 'PyG(sparse)'
+df_filckr_pyg['Tech'] = 'PyG'
 df_filckr_GS['Tech'] = 'GeoT'
 
 # Concatenate the two DataFrames vertically
@@ -74,7 +74,7 @@ new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_reddit2_GS = pd.DataFrame(new_percent, index=['reddit2_GS'])
 
-df_reddit2_pyg['Tech'] = 'PyG(sparse)'
+df_reddit2_pyg['Tech'] = 'PyG'
 df_reddit2_GS['Tech'] = 'GeoT'
 
 df_combined_reddit2 = pd.concat([df_reddit2_pyg, df_reddit2_GS], ignore_index=True)
@@ -101,7 +101,7 @@ new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
 
 df_arxiv_GS = pd.DataFrame(new_percent, index=['arxiv_GS'])
 
-df_arxiv_pyg['Tech'] = 'PyG(sparse)'
+df_arxiv_pyg['Tech'] = 'PyG'
 df_arxiv_GS['Tech'] = 'GeoT'
 
 df_combined_arxiv = pd.concat([df_arxiv_pyg, df_arxiv_GS], ignore_index=True)
@@ -118,7 +118,7 @@ df_long = pd.melt(df_combined, id_vars=['Tech', 'Dataset'], var_name='Category',
 plot = (
     so.Plot(df_long, x="Tech", y="Percentage", color="Category")
     .facet("Dataset")
-    .add(so.Bar(edgewidth=0, width=0.6), so.Stack())
+    .add(so.Bar(edgewidth=0, width=0.5), so.Stack())
     .scale(color="mako")
     .label(legend="Category", x="", y="Percentage (%)")
     # .layout(size=(12, 6))
@@ -136,19 +136,19 @@ plot.theme(axes_style("white"))
 so.Plot.config.theme.update(axes_style("ticks"))
 # configure font type and size
 theme_dict = {
-    "axes.titlesize" : 20,
+    "axes.titlesize" : 22,
     "axes.titleweight": "bold",
-    "axes.labelsize": 16,
-    "font.size": 14,
+    "axes.labelsize": 20,
+    "font.size": 16,
     'font.family': 'Arial',
-    'xtick.labelsize': 16,
-    'ytick.labelsize': 16,
-    'legend.fontsize': 14,
-    'legend.title_fontsize': 16,
+    'xtick.labelsize': 18,
+    'ytick.labelsize': 18,
+    'legend.fontsize': 16,
+    'legend.title_fontsize': 18,
     'legend.edgecolor': 'white',
     'legend.fancybox': False,
     'legend.loc': 'upper center',
-    'figure.figsize': (12, 6),
+    'figure.figsize': (8, 6),
 }
 so.Plot.config.theme.update(theme_dict)
 plot.save("breakdown.pdf", bbox_inches='tight')

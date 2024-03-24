@@ -93,5 +93,5 @@ axs[1].set_xlabel('')
 
 plt.ylim(bottom=0)  # Set the bottom limit of the y-axis to 0
 # Save the plot
-plt.savefig("portability_speedup_comparison.pdf", dpi=300)  # Increase dpi for higher resolution if needed
+plt.savefig("portability_speedup_comparison.pdf", dpi=300, bbox_inches='tight')
 

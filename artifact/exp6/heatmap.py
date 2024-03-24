@@ -26,7 +26,6 @@ df_arxiv = df_arxiv.pivot(index='config2', columns='config3', values='gflops')
 
 # plot the heatmap
 plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 10
 fig, ax = plt.subplots(2, 1, figsize=(6, 5))
 
 # set mako palette
@@ -38,18 +37,28 @@ ax[0].set_title('Amazon-Photo')
 ax[0].set_ylabel('$T_N$')
 ax[0].set_xlabel('')
 sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap=color)
-ax[1].set_title('ogbn-arxiv')
+ax[1].set_title('Ogbn-Arxiv')
 ax[1].set_xlabel('$M_t$')
 ax[1].set_ylabel('$T_N$')
 
+# set font size of text in heatmap
+for i in range(2):
+    for text in ax[i].texts:
+        text.set_fontsize(11)
+        text.set_fontweight('bold')
+        text.set_fontfamily('Arial')
+
 # set font size of subfigure title
 for i in range(2):
-    ax[i].title.set_fontsize(14)
+    ax[i].title.set_fontsize(15)
     ax[i].title.set_fontweight('bold') 
     # label size
-    ax[i].xaxis.label.set_fontsize(12)
-    ax[i].yaxis.label.set_fontsize(12)
+    ax[i].xaxis.label.set_fontsize(13)
+    ax[i].yaxis.label.set_fontsize(13)
+    # tick size
+    ax[i].tick_params(axis='x', labelsize=11)
+    ax[i].tick_params(axis='y', labelsize=11)
 
 plt.tight_layout()
 
-plt.savefig('heatmap.png', dpi=300)
+plt.savefig('heatmap.pdf', dpi=300, bbox_inches='tight')

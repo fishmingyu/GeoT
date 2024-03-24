@@ -34,15 +34,11 @@ df_filtered['normalized_speedup'] = df_filtered.groupby(['dataset', 'model'])['t
 # melt the dataframe
 df_melted = pd.melt(df_filtered, id_vars=["dataset", "model", "Method"], value_vars=["normalized_speedup"], var_name="Metric")
 
-# set global font to Arial
-plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 12  # Set a base font size
-
 # remove the background grid
 sns.set_theme(style="ticks")  # Set the Seaborn style
 
 # Create the FacetGrid object and map the barplot
-g = sns.FacetGrid(df_melted, col="model", col_wrap=3, height=3.5, aspect=0.6, sharey=False)
+g = sns.FacetGrid(df_melted, col="model", col_wrap=3, height=3.2, aspect=0.7, sharey=False)
 g.map_dataframe(sns.barplot, x="dataset", y="value", hue="Method", palette="mako")
 
 # Remove the background grid and set styles
@@ -54,8 +50,9 @@ plt.rcParams['font.size'] = 9
 g.set_xlabels('')
 g.set_ylabels("Normalized Speedup")
 # legend font
-g.add_legend(title="Method", title_fontsize='9', fontsize='9')
-sns.move_legend(g, "right", bbox_to_anchor=(1, 0.5), ncol=1, fontsize=9, title_fontsize=9)
+# g.add_legend(title="Method", title_fontsize='9', fontsize='9')
+# sns.move_legend(g, "right", bbox_to_anchor=(1, 0.5), ncol=1, fontsize=9, title_fontsize=9)
+plt.legend(title="Method", title_fontsize=9, fontsize=9, fancybox=False, shadow=False, edgecolor='white', loc='upper center')
 
 # Iterate over axes to adjust y-axis limits independently
 for ax in g.axes.flatten():
@@ -64,10 +61,14 @@ for ax in g.axes.flatten():
     ax.set_ylim(0, max_val * 1.1)  # Add 10% padding above the tallest bar
     # revise the subfigure title
     model = ax.get_title().split('=')[1].strip()
-    ax.set_title(model, fontsize=14, fontweight='bold')
+    ax.set_title(model, fontsize=13, fontweight='bold')
     # Rotate x-axis labels and adjust font size
     ax.tick_params(axis='x', labelrotation=50)
-    ax.xaxis.label.set_size(12)
+    # Adjust xtick label size
+    ax.tick_params(axis='x', labelsize=10)
+    # Adjust ylabel size
+    ax.yaxis.label.set_size(11)
+
 
 # Adjust layout to prevent clipping of x-axis labels
 g.figure.subplots_adjust(bottom=0.25)
