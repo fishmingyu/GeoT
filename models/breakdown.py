@@ -86,11 +86,11 @@ if __name__ == "__main__":
             percentages[row[0]] = row[7][:-1]
 
     if args.sparse:
-        filename = f"{args.dataset}_sparse_breakdown.csv"
+        filename = f"{args.dataset}_{args.hidden_channels}_sparse_breakdown.csv"
     else:
-        filename = f"{args.dataset}_breakdown.csv"
+        filename = f"{args.dataset}_{args.hidden_channels}_breakdown.csv"
     if args.GS and args.sparse:
-        filename = f"{args.dataset}_sparse_GS_breakdown.csv"
+        filename = f"{args.dataset}_{args.hidden_channels}_sparse_GS_breakdown.csv"
 
     # create a new directory called breakdown
     # write the file to the directory
