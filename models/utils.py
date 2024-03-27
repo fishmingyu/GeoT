@@ -32,7 +32,7 @@ class Dataset:
             raise KeyError('Unknown dataset {}.'.format(self.name))
         self.edge_index = graph.edge_index.to(self.device)
         # add self loop to edge_index
-        # self.edge_index, _ = torch_geometric.utils.add_self_loops(self.edge_index)
+        self.edge_index, _ = torch_geometric.utils.add_self_loops(self.edge_index)
         row = self.edge_index[0]
         col = self.edge_index[1]
         # stack the row and col to create the edge_index
