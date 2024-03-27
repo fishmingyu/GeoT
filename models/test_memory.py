@@ -6,7 +6,7 @@ def run_memory():
     datasets = ['flickr', 'ogbn-arxiv', 'reddit2']
     features = ['32', '64']
     # three models
-    models = ['GCN', 'GIN', 'GraphSAGE']
+    models = ['GCN']
 
     for dataset in datasets:
         for feature in features:
