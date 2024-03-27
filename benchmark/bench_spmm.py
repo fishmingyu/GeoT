@@ -39,11 +39,9 @@ def to_rowptr(row, size):
 def test_gather_scatter(file, dataset, feature_size, device):
     g = Dataset(dataset, device)
     print(g.num_nodes, g.num_edges)
-    edge_index = g.edge_index
     sparse_size = g.num_nodes
-    sorted_index = torch.argsort(edge_index[1])
-    src_index = edge_index[0][sorted_index]
-    dst_index = edge_index[1][sorted_index]
+    src_index = g.src_idx
+    dst_index = g.dst_idx
     src_size = sparse_size
     src = torch.rand(src_size, feature_size).to(device)
     # create sparse tensor
@@ -58,7 +56,7 @@ def test_gather_scatter(file, dataset, feature_size, device):
     #         adj.detach(), True, requires_grad=False)
 
     # create sparse tensor for torch_sparse
-    adj_torch_sparse = torch_sparse.SparseTensor(row=row, col=col, value=value, sparse_sizes=(sparse_size, sparse_size))
+    adj_torch_sparse = g.adj_t
 
     # benchmark time
     iter = 100
