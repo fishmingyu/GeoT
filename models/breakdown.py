@@ -15,26 +15,7 @@ from utils import Dataset
 from utils import timeit
 import csv
 import os
-
-
-class GraphSAGE(BasicGNN):
-    supports_edge_weight: Final[bool] = False
-    supports_edge_attr: Final[bool] = False
-    supports_norm_batch: Final[bool]
-
-    def init_conv(self, in_channels: int, out_channels: int,
-                  **kwargs) -> MessagePassing:
-        return SAGEConv(in_channels, out_channels, **kwargs)
-
-class GraphSAGE_GS(BasicGNN):
-    supports_edge_weight: Final[bool] = False
-    supports_edge_attr: Final[bool] = False
-    supports_norm_batch: Final[bool]
-
-    def init_conv(self, in_channels: int, out_channels: int,
-                  **kwargs) -> MessagePassing:
-        return SAGEConv_GS(in_channels, out_channels, **kwargs)
-
+from graphsage import GraphSAGE, GraphSAGE_GS
 
 if __name__ == "__main__":
     import argparse
@@ -48,23 +29,19 @@ if __name__ == "__main__":
     parser.add_argument("--GS", action="store_true")
     args = parser.parse_args()
 
-    # set aggr = sum & self_lopp
     kwargs = {"aggr": "sum"}
     d = Dataset(args.dataset, args.device)
     if args.GS:
         model = GraphSAGE_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     else:
         model = GraphSAGE(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
-    if args.sparse:
-        data = d.adj_t
-    else:
-        data = d.edge_index
+    data = d.adj_t if args.sparse else d.edge_index
     
     # benchmark breakdown with torch profiler
     with torch.autograd.profiler.profile(use_cuda=True) as prof:
         model(d.x, data)
 
-    # Analyze the profiling results
+    # Analyze the profiling cuda results
     profiler_results = prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
 
     # Convert the table to CSV format
