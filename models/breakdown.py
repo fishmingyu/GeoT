@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--dataset", type=str, default="ogbn-arxiv")
     parser.add_argument("--sparse", action="store_true")
+    parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--hidden_channels", type=int, default=64)
     parser.add_argument("--GS", action="store_true")
     args = parser.parse_args()
@@ -51,9 +52,9 @@ if __name__ == "__main__":
     kwargs = {"aggr": "sum"}
     d = Dataset(args.dataset, args.device)
     if args.GS:
-        model = GraphSAGE_GS(d.in_channels, args.hidden_channels, d.num_classes, **kwargs).to(args.device)
+        model = GraphSAGE_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     else:
-        model = GraphSAGE(d.in_channels, args.hidden_channels, d.num_classes, **kwargs).to(args.device)
+        model = GraphSAGE(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     if args.sparse:
         data = d.adj_t
     else:
