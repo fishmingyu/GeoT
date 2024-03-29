@@ -43,7 +43,7 @@ g.map_dataframe(sns.barplot, x="feature_size", y="normalized_speedup", hue="meth
 # Adjust the legend position to upper center
 # sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 1.0), ncol=4, fontsize=14)
 
-plt.legend(title="", title_fontsize=16, fontsize=14, fancybox=False, shadow=False, edgecolor='white', loc='upper center')
+plt.legend(title="", title_fontsize=18, fontsize=16, fancybox=False, shadow=False, edgecolor='white', loc='upper left')
 plt.subplots_adjust(top=0.9)
 # g.figure.suptitle('Segment Reduce Speedup (Normalized by PyG Scatter Reduce)', fontsize=18, fontweight='bold')
 
@@ -53,10 +53,44 @@ for ax in g.axes.flatten():
     feature_sizes = df["feature_size"].unique()
     ax.set_xticks(range(len(feature_sizes)))  # Ensure there's a tick for each feature size
     ax.set_xticklabels(feature_sizes, rotation=45)
-    ax.set_xlabel("Feature Size", fontsize=18, fontweight='normal')
-    ax.set_ylabel("Normalized Speedup", fontsize=18, fontweight='normal')
-    ax.tick_params(axis='x', labelsize=16)  # Adjust x-tick label size
-    ax.tick_params(axis='y', labelsize=16)  # Adjust y-tick label size
-    ax.set_title(ax.get_title(), fontsize=20, fontweight='bold')  # Adjust subplot title size 
+    ax.set_xlabel("Feature Size", fontsize=20, fontweight='normal')
+    ax.set_ylabel("Normalized Speedup", fontsize=20, fontweight='normal')
+    ax.tick_params(axis='x', labelsize=18)  # Adjust x-tick label size
+    ax.tick_params(axis='y', labelsize=18)  # Adjust y-tick label size
+    # remove "dataset=" from the title
+    ax.set_title(ax.get_title().split('=')[1], fontsize=22, fontweight='bold')  # Adjust subplot title size
+    # ax.set_title(ax.get_title(), fontsize=22, fontweight='bold')  # Adjust subplot title size 
 
 plt.savefig("index_scatter_benchmark.pdf", dpi=300, bbox_inches='tight')
+
+
+
+# calculate the geomean speedup across all datasets and feature sizes
+geomean_speedup = df_melted.groupby(['method'])['normalized_speedup'].apply(lambda x: np.prod(x) ** (1 / len(x)))
+# GeoT vs pyg_segment_coo
+speedup = geomean_speedup['GeoT'] / geomean_speedup['pyg_segment_coo']
+print(f"Speedup of GeoT over pyg_segment_coo: {speedup:.2f}")
+# GeoT vs torch_scatter_reduce
+speedup = geomean_speedup['GeoT'] / geomean_speedup['torch_scatter_reduce']
+print(f"Speedup of GeoT over torch_scatter_reduce: {speedup:.2f}")
+# GeoT vs pyg_scatter_reduce
+speedup = geomean_speedup['GeoT'] / geomean_speedup['pyg_scatter_reduce']
+print(f"Speedup of GeoT over pyg_scatter_reduce: {speedup:.2f}")
+
+# GeoT vs pyg_segment_coo
+# filter GeoT and pyg_segment_coo
+df_filtered = df_melted[df_melted['method'].isin(['GeoT', 'pyg_segment_coo'])].copy() 
+# recalculated the normalized speedup
+df_filtered['speedup'] = df_filtered.groupby(['dataset', 'feature_size'])['time'].transform(lambda x: 1 / (x / x.iloc[0]))
+# calculate the max speedup overall
+max_speedup = df_filtered['speedup'].max()
+print(f"Max speedup of GeoT vs pyg_segment_coo: {max_speedup:.2f}")
+
+# GeoT vs torch_scatter_reduce
+# filter GeoT and torch_scatter_reduce
+df_filtered = df_melted[df_melted['method'].isin(['GeoT', 'torch_scatter_reduce'])].copy() 
+# recalculated the normalized speedup
+df_filtered.loc['normalized_speedup'] = df_filtered.groupby(['dataset', 'feature_size'])['time'].transform(lambda x: 1 / (x / x.iloc[0]))
+# calculate the max speedup overall
+max_speedup = df_filtered['normalized_speedup'].max()
+print(f"Max speedup of GeoT vs torch_scatter_reduce: {max_speedup:.2f}")

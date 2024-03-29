@@ -8,111 +8,49 @@ from seaborn import axes_style
 # Applying Seaborn styles
 sns.set_style("whitegrid")
 
-# Read the CSV file
-df_filckr_pyg = pd.read_csv("../SC24-Result/breakdown/flickr_sparse_breakdown.csv")
-df_filckr_GS = pd.read_csv("../SC24-Result/breakdown/flickr_sparse_GS_breakdown.csv")
 
-new_percent = {}
+def process_df(dataset, feature):
+    filename = "../SC24-Result/breakdown/{}_{}_sparse_breakdown.csv".format(dataset, feature)
+    filename_GS = "../SC24-Result/breakdown/{}_{}_sparse_GS_breakdown.csv".format(dataset, feature)
+    df_pyg = pd.read_csv(filename)
+    df_GS = pd.read_csv(filename_GS)
+    new_percent = {}
+    new_percent['SpMM'] = df_pyg['Percentage'][df_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
+    new_percent['MatMul'] = df_pyg['Percentage'][df_pyg['Function'] == 'aten::addmm'].values[0] + df_pyg['Percentage'][df_pyg['Function'] == 'aten::mm'].values[0]
+    new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
+    df_pyg = pd.DataFrame(new_percent, index=['{}_pyg'.format(dataset)])
+    new_percent = {}
+    new_percent['SpMM'] = df_GS['Percentage'][df_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
+    new_percent['MatMul'] = df_GS['Percentage'][df_GS['Function'] == 'aten::addmm'].values[0] + df_GS['Percentage'][df_GS['Function'] == 'aten::mm'].values[0]
+    new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
+    df_GS = pd.DataFrame(new_percent, index=['{}_GS'.format(dataset)])
+    df_pyg['Tech'] = 'PyG'
+    df_GS['Tech'] = 'GeoT'
+    df_combined = pd.concat([df_pyg, df_GS], ignore_index=True)
+    # convert to uppercase for the first letter, and add feature size
+    if dataset == 'ogbn-arxiv':
+        dataset = 'arxiv'
+    if dataset == 'reddit2':
+        dataset = 'reddit'
+    dataset = dataset[0].upper() + dataset[1:] + '-' + str(feature)
+    df_combined['Dataset'] = dataset
+    return df_combined
 
-# for pyg, calculate the "torch_sparse::spmm_sum" percentage using the tag "SpMM"
-# check "torch_sparse::spmm_sum" is in the value of the function column
-# then get the percentage
-new_percent['SpMM'] = df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
+features = [32, 64]
+datasets = ['flickr', 'ogbn-arxiv', 'reddit2']
 
-# add up "aten::addmm" and "aten::mm" using the tag "MatMul"
-# check "aten::addmm" and "aten::mm" are in the value of the function column
-# then get the percentage
-new_percent['MatMul'] = df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'aten::addmm'].values[0] + df_filckr_pyg['Percentage'][df_filckr_pyg['Function'] == 'aten::mm'].values[0]
+# combine all the DataFrames
+df_list = []
+for dataset in datasets:
+    for feature in features:
+        df_combined = process_df(dataset, feature)
+        df_list.append(df_combined)
 
-# use 100 - (SpMM + MatMul + Format) to calculate the "Others" percentage
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
+# Concatenate all the DataFrames
+df_combined = pd.concat(df_list, ignore_index=True)
 
-# Create a new dataframe with the new percentages
-df_filckr_pyg = pd.DataFrame(new_percent, index=['filckr_pyg'])
-
-# now we process the GeoT data
-new_percent = {}
-
-# for GeoT, calculate the "torch_index_scatter::gather_scatter" percentage using the tag "SpMM"
-new_percent['SpMM'] = df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
-
-# add up "aten::addmm" and "aten::mm" using the tag "MatMul"
-new_percent['MatMul'] = df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'aten::addmm'].values[0] + df_filckr_GS['Percentage'][df_filckr_GS['Function'] == 'aten::mm'].values[0]
-
-# use 100 - (SpMM + MatMul + Format) to calculate the "Others" percentage
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
-
-# Create a new dataframe with the new percentages
-df_filckr_GS = pd.DataFrame(new_percent, index=['filckr_GS'])
-
-
-df_filckr_pyg['Tech'] = 'PyG'
-df_filckr_GS['Tech'] = 'GeoT'
-
-# Concatenate the two DataFrames vertically
-df_combined_filckr = pd.concat([df_filckr_pyg, df_filckr_GS], ignore_index=True)
-df_combined_filckr['Dataset'] = 'Flickr'
-
-# now do the same process for dataset reddit2
-
-df_reddit2_pyg = pd.read_csv("../SC24-Result/breakdown/reddit2_sparse_breakdown.csv")
-df_reddit2_GS = pd.read_csv("../SC24-Result/breakdown/reddit2_sparse_GS_breakdown.csv")
-
-new_percent = {}
-
-new_percent['SpMM'] = df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
-new_percent['MatMul'] = df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'aten::addmm'].values[0] + df_reddit2_pyg['Percentage'][df_reddit2_pyg['Function'] == 'aten::mm'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
-
-df_reddit2_pyg = pd.DataFrame(new_percent, index=['reddit2_pyg'])
-
-new_percent = {}
-
-new_percent['SpMM'] = df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
-new_percent['MatMul'] = df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'aten::addmm'].values[0] + df_reddit2_GS['Percentage'][df_reddit2_GS['Function'] == 'aten::mm'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
-
-df_reddit2_GS = pd.DataFrame(new_percent, index=['reddit2_GS'])
-
-df_reddit2_pyg['Tech'] = 'PyG'
-df_reddit2_GS['Tech'] = 'GeoT'
-
-df_combined_reddit2 = pd.concat([df_reddit2_pyg, df_reddit2_GS], ignore_index=True)
-df_combined_reddit2['Dataset'] = 'Reddit2'
-
-
-# do the same process for the ogbn-arxiv dataset
-df_arxiv_pyg = pd.read_csv("../SC24-Result/breakdown/ogbn-arxiv_sparse_breakdown.csv")
-df_arxiv_GS = pd.read_csv("../SC24-Result/breakdown/ogbn-arxiv_sparse_GS_breakdown.csv")
-
-new_percent = {}
-
-new_percent['SpMM'] = df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
-new_percent['MatMul'] = df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'aten::addmm'].values[0] + df_arxiv_pyg['Percentage'][df_arxiv_pyg['Function'] == 'aten::mm'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
-
-df_arxiv_pyg = pd.DataFrame(new_percent, index=['arxiv_pyg'])
-
-new_percent = {}
-
-new_percent['SpMM'] = df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
-new_percent['MatMul'] = df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'aten::addmm'].values[0] + df_arxiv_GS['Percentage'][df_arxiv_GS['Function'] == 'aten::mm'].values[0]
-new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
-
-df_arxiv_GS = pd.DataFrame(new_percent, index=['arxiv_GS'])
-
-df_arxiv_pyg['Tech'] = 'PyG'
-df_arxiv_GS['Tech'] = 'GeoT'
-
-df_combined_arxiv = pd.concat([df_arxiv_pyg, df_arxiv_GS], ignore_index=True)
-
-df_combined_arxiv['Dataset'] = 'ogbn-arxiv'
-
-# Concatenate filckr, reddit2, and ogbn-arxiv DataFrames
-df_combined = pd.concat([df_combined_filckr, df_combined_reddit2, df_combined_arxiv], ignore_index=True)
 # melt the DataFrame
-df_long = pd.melt(df_combined, id_vars=['Tech', 'Dataset'], var_name='Category', value_name='Percentage')
-
+df_long = pd.melt(df_combined, id_vars=['Dataset', 'Tech'], var_name='Category', value_name='Percentage')
 
 # Now, plotting with seaborn.objects, facetting by 'Dataset'
 plot = (
@@ -136,19 +74,19 @@ plot.theme(axes_style("white"))
 so.Plot.config.theme.update(axes_style("ticks"))
 # configure font type and size
 theme_dict = {
-    "axes.titlesize" : 22,
+    "axes.titlesize" : 23,
     "axes.titleweight": "bold",
-    "axes.labelsize": 20,
+    "axes.labelsize": 23,
     "font.size": 16,
     'font.family': 'Arial',
-    'xtick.labelsize': 18,
-    'ytick.labelsize': 18,
-    'legend.fontsize': 16,
-    'legend.title_fontsize': 18,
+    'xtick.labelsize': 17,
+    'ytick.labelsize': 17,
+    'legend.fontsize': 17,
+    'legend.title_fontsize': 17,
     'legend.edgecolor': 'white',
     'legend.fancybox': False,
-    'legend.loc': 'upper center',
-    'figure.figsize': (8, 6),
+    'legend.loc': 'best',
+    'figure.figsize': (12.5, 6.5),
 }
 so.Plot.config.theme.update(theme_dict)
 plot.save("breakdown.pdf", bbox_inches='tight')

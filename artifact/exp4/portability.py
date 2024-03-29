@@ -72,16 +72,16 @@ df_combined_spmm = pd.concat([df_a100_spmm, df_h100_spmm, df_rtx3090Ti_spmm], ig
 fig, axs = plt.subplots(1, 2, figsize=(10, 4.2))
 # Example plotting code for the first subplot
 sns.stripplot(x='GPU', y='normalized_speedup', data=df_combined, ax=axs[0], hue='GPU', palette='mako')
-axs[0].set_title('Segment Reduce', fontsize=16, fontweight='bold', fontname='Arial')
-axs[0].set_ylabel('Normalized Speedup', fontsize=14,  fontname='Arial')
-axs[0].tick_params(axis='x', labelsize=12)
-axs[0].tick_params(axis='y', labelsize=12)
+axs[0].set_title('Segment Reduce', fontsize=18, fontweight='bold', fontname='Arial')
+axs[0].set_ylabel('Normalized Speedup', fontsize=16,  fontname='Arial')
+axs[0].tick_params(axis='x', labelsize=14)
+axs[0].tick_params(axis='y', labelsize=14)
 
 # Example plotting code for the second subplot
 sns.stripplot(x='GPU', y='normalized_speedup', data=df_combined_spmm, ax=axs[1], hue='GPU', palette='mako')
-axs[1].set_title('SpMM', fontsize=16, fontweight='bold', fontname='Arial')
+axs[1].set_title('SpMM', fontsize=18, fontweight='bold', fontname='Arial')
 axs[1].set_ylabel('')
-axs[1].tick_params(axis='x', labelsize=12)
+axs[1].tick_params(axis='x', labelsize=14)
 
 plt.tight_layout()
 
@@ -95,3 +95,6 @@ plt.ylim(bottom=0)  # Set the bottom limit of the y-axis to 0
 # Save the plot
 plt.savefig("portability_speedup_comparison.pdf", dpi=300, bbox_inches='tight')
 
+# calculate the geomean of df_rtx3090Ti_spmm['normalized_speedup']
+geomean = df_rtx3090Ti_spmm['normalized_speedup'].prod() ** (1 / len(df_rtx3090Ti_spmm['normalized_speedup']))
+print(f"Geometric mean of RTX3090Ti SpMM: {geomean}")
