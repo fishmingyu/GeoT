@@ -9,6 +9,8 @@ def run_breakdown():
         for feature in features:
             py_file = f"breakdown.py"
             print(f"Running {py_file} with dataset {dataset} and hidden_channels {feature}")
+            # run original model
+            os.system(f"python3 {py_file} --dataset {dataset} --hidden_channels {feature}")
             # run sparse
             os.system(f"python3 {py_file} --dataset {dataset} --hidden_channels {feature} --sparse")
             # run GS
