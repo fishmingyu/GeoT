@@ -56,14 +56,18 @@ class Dataset:
 
 def timeit(model, iter, x, data):
     # benchmark time
+    # warm up
+    for i in range(10):
+        model(x, data)
+
     t = torch.zeros(iter)
     for i in range(iter):
         torch.cuda.synchronize()
-        t0 = time.time()
+        t1_start = time.perf_counter() 
         model(x, data)
         torch.cuda.synchronize()
-        t1 = time.time()
-        t[i] = t1 - t0
+        t1_end = time.perf_counter()
+        t[i] = t1_end - t1_start
     print(f"Average time: {t.mean():.6f} s")
     return t
 
