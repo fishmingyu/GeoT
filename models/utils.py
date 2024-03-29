@@ -61,13 +61,13 @@ def timeit(model, iter, x, data):
         model(x, data)
 
     t = torch.zeros(iter)
+    torch.cuda.synchronize()
+    t1_start = time.perf_counter() 
     for i in range(iter):
-        torch.cuda.synchronize()
-        t1_start = time.perf_counter() 
         model(x, data)
-        torch.cuda.synchronize()
-        t1_end = time.perf_counter()
-        t[i] = t1_end - t1_start
+    torch.cuda.synchronize()
+    t1_end = time.perf_counter()
+    t[i] = t1_end - t1_start
     print(f"Average time: {t.mean():.6f} s")
     return t
 

@@ -58,6 +58,12 @@ def test_gather_scatter(file, dataset, feature_size, device):
     # create sparse tensor for torch_sparse
     adj_torch_sparse = g.adj_t
 
+    # warm up
+    for i in range(10):
+        gather_weight_scatter(src_index, dst_index, value, src, 'sum')
+        pytorch_spmm(adj, src)
+        pyg_spmm(adj_torch_sparse, src, 'sum')
+
     # benchmark time
     iter = 100
     # write to csv file

@@ -37,6 +37,10 @@ if __name__ == "__main__":
         model = GraphSAGE(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     data = d.adj_t if args.sparse else d.edge_index
     
+    # warm up
+    for _ in range(10):
+        model(d.x, data)
+
     # benchmark breakdown with torch profiler
     with torch.autograd.profiler.profile(use_cuda=True) as prof:
         model(d.x, data)
