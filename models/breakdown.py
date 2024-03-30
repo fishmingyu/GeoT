@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser.add_argument("--GS", action="store_true")
     args = parser.parse_args()
 
-    kwargs = {"aggr": "sum", "add_self_loops": False}
+    kwargs = {"aggr": "sum"}
     d = Dataset(args.dataset, args.device)
     if args.GS:
         model = GraphSAGE_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
