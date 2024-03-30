@@ -15,8 +15,8 @@ from utils import Dataset
 from utils import timeit
 import csv
 import os
-from graphsage import GraphSAGE, GraphSAGE_GS
-# from gcn import GCN, GCN_GS
+# from graphsage import GraphSAGE, GraphSAGE_GS
+from gcn import GCN, GCN_GS
 
 if __name__ == "__main__":
     import argparse
@@ -30,12 +30,12 @@ if __name__ == "__main__":
     parser.add_argument("--GS", action="store_true")
     args = parser.parse_args()
 
-    kwargs = {"aggr": "sum"}
+    kwargs = {"add_self_loops": False}
     d = Dataset(args.dataset, args.device)
     if args.GS:
-        model = GraphSAGE_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
+        model = GCN_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     else:
-        model = GraphSAGE(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
+        model = GCN(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
     data = d.adj_t if args.sparse else d.edge_index
     
     # warm up
