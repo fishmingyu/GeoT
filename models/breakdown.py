@@ -16,6 +16,7 @@ from utils import timeit
 import csv
 import os
 from graphsage import GraphSAGE, GraphSAGE_GS
+# from gcn import GCN, GCN_GS
 
 if __name__ == "__main__":
     import argparse
@@ -29,7 +30,7 @@ if __name__ == "__main__":
     parser.add_argument("--GS", action="store_true")
     args = parser.parse_args()
 
-    kwargs = {"aggr": "sum"}
+    kwargs = {"aggr": "sum", "add_self_loops": False}
     d = Dataset(args.dataset, args.device)
     if args.GS:
         model = GraphSAGE_GS(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, **kwargs).to(args.device)
@@ -43,7 +44,8 @@ if __name__ == "__main__":
 
     # benchmark breakdown with torch profiler
     with torch.autograd.profiler.profile(use_cuda=True) as prof:
-        model(d.x, data)
+        for _ in range(3):
+            model(d.x, data)
 
     # Analyze the profiling cuda results
     profiler_results = prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=10)
