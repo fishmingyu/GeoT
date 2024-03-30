@@ -63,12 +63,11 @@ g.set_xlabels('')
 # Set y-axis label
 g.set_ylabels("Normalized Speedup")
 
-
 # add the title
 # g.figure.suptitle('SpMM Speedup (Normalized by cuSPARSE)', fontsize=17, fontweight='bold')
 # plt.subplots_adjust(top=0.9)
 
-# plt.legend(title="", title_fontsize=11, fontsize=11, fancybox=False, shadow=False, edgecolor='white', loc='upper right')
+# plt.legend(title="", title_fontsize=8, fontsize=8, fancybox=False, shadow=False, edgecolor='white', loc='upper right')
 
 # Rotate x-axis labels
 for ax in g.axes.flatten():
@@ -84,8 +83,7 @@ for ax in g.axes.flatten():
     ax.tick_params(axis='x', labelsize=10)
     ax.tick_params(axis='y', labelsize=10)  # Adjust y-tick label size
 
-# set legend in the first subplot
-g.axes[0].legend(title="", title_fontsize=8, fontsize=8, fancybox=False, shadow=False, edgecolor='white', loc='upper left')
+g.axes[4].legend(title="", title_fontsize=8, fontsize=8, fancybox=False, shadow=False, edgecolor='white', loc='upper left', framealpha=0.5)
 
 # save the figure
 plt.savefig('end2end.pdf', dpi=300, bbox_inches='tight')

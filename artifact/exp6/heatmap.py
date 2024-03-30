@@ -31,12 +31,12 @@ fig, ax = plt.subplots(2, 1, figsize=(6, 5))
 # set mako palette
 color = sns.color_palette("GnBu", as_cmap=True)
 
-
-sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".3f", cmap=color)
+sns.set(font_scale=1.2)
+sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".1f", cmap=color)
 ax[0].set_title('Amazon-Photo')
 ax[0].set_ylabel('$T_N$')
 ax[0].set_xlabel('')
-sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap=color)
+sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".1f", cmap=color)
 ax[1].set_title('Ogbn-Arxiv')
 ax[1].set_xlabel('$M_t$')
 ax[1].set_ylabel('$T_N$')
@@ -44,20 +44,20 @@ ax[1].set_ylabel('$T_N$')
 # set font size of text in heatmap
 for i in range(2):
     for text in ax[i].texts:
-        text.set_fontsize(11)
+        text.set_fontsize(13)
         text.set_fontweight('bold')
         text.set_fontfamily('Arial')
 
 # set font size of subfigure title
 for i in range(2):
-    ax[i].title.set_fontsize(15)
+    ax[i].title.set_fontsize(17)
     ax[i].title.set_fontweight('bold') 
     # label size
-    ax[i].xaxis.label.set_fontsize(13)
-    ax[i].yaxis.label.set_fontsize(13)
+    ax[i].xaxis.label.set_fontsize(16)
+    ax[i].yaxis.label.set_fontsize(16)
     # tick size
-    ax[i].tick_params(axis='x', labelsize=11)
-    ax[i].tick_params(axis='y', labelsize=11)
+    ax[i].tick_params(axis='x', labelsize=13)
+    ax[i].tick_params(axis='y', labelsize=13)
 
 plt.tight_layout()
 
