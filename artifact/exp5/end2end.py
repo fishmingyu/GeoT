@@ -87,3 +87,28 @@ g.axes[4].legend(title="", title_fontsize=8, fontsize=8, fancybox=False, shadow=
 
 # save the figure
 plt.savefig('end2end.pdf', dpi=300, bbox_inches='tight')
+
+
+# calcuate the average speedup of GeoT compared to PyG_Sparse
+# filter the dataframe
+df_filtered = df_filtered[df_filtered['Method'].isin(['PyG_Sparse', 'GeoT'])]
+# calculate the average speedup
+average_speedup = df_filtered['normalized_speedup'].mean()
+
+print(f"Average speedup of GeoT over PyG_Sparse: {average_speedup:.2f}")
+
+# calculate the maximum speedup of GeoT compared to PyG_Sparse
+max_speedup = df_filtered['normalized_speedup'].max()
+print(f"Maximum speedup of GeoT over PyG_Sparse: {max_speedup:.2f}")
+
+# calculate the average speedup of GeoT compared to PyG_Dense
+# filter the dataframe
+df_filtered = df_filtered[df_filtered['Method'].isin(['PyG_Dense', 'GeoT'])]
+# calculate the average speedup
+average_speedup = df_filtered['normalized_speedup'].mean()
+
+print(f"Average speedup of GeoT over PyG_Dense: {average_speedup:.2f}")
+
+# calculate the maximum speedup of GeoT compared to PyG_Dense
+max_speedup = df_filtered['normalized_speedup'].max()
+print(f"Maximum speedup of GeoT over PyG_Dense: {max_speedup:.2f}")

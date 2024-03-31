@@ -16,12 +16,12 @@ def process_df(dataset, feature):
     df_GS = pd.read_csv(filename_GS)
     new_percent = {}
     new_percent['SpMM'] = df_pyg['Percentage'][df_pyg['Function'] == 'torch_sparse::spmm_sum'].values[0]
-    new_percent['MatMul'] = df_pyg['Percentage'][df_pyg['Function'] == 'aten::addmm'].values[0] + df_pyg['Percentage'][df_pyg['Function'] == 'aten::mm'].values[0]
+    new_percent['MatMul'] = df_pyg['Percentage'][df_pyg['Function'] == 'aten::mm'].values[0]
     new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
     df_pyg = pd.DataFrame(new_percent, index=['{}_pyg'.format(dataset)])
     new_percent = {}
-    new_percent['SpMM'] = df_GS['Percentage'][df_GS['Function'] == 'torch_index_scatter::gather_scatter'].values[0]
-    new_percent['MatMul'] = df_GS['Percentage'][df_GS['Function'] == 'aten::addmm'].values[0] + df_GS['Percentage'][df_GS['Function'] == 'aten::mm'].values[0]
+    new_percent['SpMM'] = df_GS['Percentage'][df_GS['Function'] == 'torch_index_scatter::gather_weight_scatter'].values[0]
+    new_percent['MatMul'] = df_GS['Percentage'][df_GS['Function'] == 'aten::mm'].values[0]
     new_percent['Others'] = 100 - (new_percent['SpMM'] + new_percent['MatMul'])
     df_GS = pd.DataFrame(new_percent, index=['{}_GS'.format(dataset)])
     df_pyg['Tech'] = 'PyG'
@@ -90,3 +90,34 @@ theme_dict = {
 }
 so.Plot.config.theme.update(theme_dict)
 plot.save("breakdown.pdf", bbox_inches='tight')
+
+# calculate the SpMM percentage reduction of GeoT over PyG
+"""
+     SpMM  MatMul  Others  Tech    Dataset
+0   51.33    8.44   40.23   PyG  Flickr-32
+1   11.43   12.54   76.03  GeoT  Flickr-32
+2   56.10   10.62   33.28   PyG  Flickr-64
+3   14.59   18.01   67.40  GeoT  Flickr-64
+4   73.12    3.17   23.71   PyG   Arxiv-32
+5   22.08    8.25   69.67  GeoT   Arxiv-32
+6   75.57    4.18   20.25   PyG   Arxiv-64
+7   23.94   11.86   64.20  GeoT   Arxiv-64
+8   83.44    2.24   14.32   PyG  Reddit-32
+9   56.89    5.55   37.56  GeoT  Reddit-32
+10  86.63    2.96   10.41   PyG  Reddit-64
+11  62.70    7.89   29.41  GeoT  Reddit-64
+"""
+# only select the SpMM, Tech, and Dataset columns
+df_spmm = df_combined[['SpMM', 'Tech', 'Dataset']]
+# calculate the SpMM percentage reduction of GeoT over PyG
+df_spmm = df_spmm.pivot(index='Dataset', columns='Tech', values='SpMM')
+
+df_spmm['Reduction'] = (df_spmm['PyG'] - df_spmm['GeoT'])
+
+# average the reduction
+reduction = df_spmm['Reduction'].mean()
+# maximum reduction
+max_reduction = df_spmm['Reduction'].max()
+
+print(f"Average SpMM percentage reduction of GeoT over PyG: {reduction:.2f}")
+print(f"Maximum SpMM percentage reduction of GeoT over PyG: {max_reduction:.2f}")
