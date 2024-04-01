@@ -45,11 +45,11 @@ for index, row in df_sr.iterrows():
     if row['feature_size'] == 4:
         plt.text(row['feature_size'], row['gflops']-5, f"{row['gflops']:.0f}", color='#007200', fontsize=12, ha='center', fontweight='bold')
     else:
-        plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.0f}", color='#007200', fontsize=12, ha='center', fontweight='bold')
+        plt.text(row['feature_size'], row['gflops']+2, f"{row['gflops']:.0f}", color='#007200', fontsize=12, ha='center', fontweight='bold')
 
 # Annotate each point for PR data
 for index, row in df_pr.iterrows():
-    plt.text(row['feature_size'], row['gflops'], f"{row['gflops']:.0f}", color='#003366', fontsize=12, ha='center', fontweight='bold')
+    plt.text(row['feature_size'], row['gflops']+2, f"{row['gflops']:.0f}", color='#003366', fontsize=12, ha='center', fontweight='bold')
 
 
 
