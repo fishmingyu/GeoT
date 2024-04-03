@@ -19,11 +19,11 @@ at::Tensor gather_scatter_cuda_impl(at::Tensor src_index, at::Tensor dst_index,
   return output;
 }
 
-TORCH_LIBRARY_FRAGMENT(torch_index_scatter, m) {
+TORCH_LIBRARY_FRAGMENT(geot, m) {
   m.def("gather_scatter(Tensor src_index, Tensor dst_index, Tensor src, str "
         "reduce) -> Tensor");
 }
 
-TORCH_LIBRARY_IMPL(torch_index_scatter, CUDA, m) {
+TORCH_LIBRARY_IMPL(geot, CUDA, m) {
   m.impl("gather_scatter", gather_scatter_cuda_impl);
 }

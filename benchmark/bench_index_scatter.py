@@ -1,5 +1,5 @@
 import torch
-import torch_index_scatter
+import geot
 from utils import Dataset
 import time
 
@@ -27,7 +27,7 @@ def torch_index_reduce(index, src):
     return torch.zeros(keys, src.size(1), device=device).index_add_(0, index, src)
 
 def index_scatter_reduce(index, src):
-    return torch_index_scatter.index_scatter(0, src, index, reduce='sum', sorted=False)
+    return geot.index_scatter(0, src, index, reduce='sum', sorted=False)
 
 
 def timeit(func, iter, *args, **kwargs):

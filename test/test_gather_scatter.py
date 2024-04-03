@@ -1,5 +1,5 @@
 import torch
-import torch_index_scatter
+import geot
 
 def ref_spmm(src_index, dst_index, src):
     sparse_size = dst_index[-1] + 1
@@ -22,7 +22,7 @@ def test_gather_scatter():
     dst_index = dst_index[sorted_index]
     src = torch.rand(src_size, feature_size).to("cuda")
     reduce = 'sum'
-    out = torch_index_scatter.gather_scatter(src_index, dst_index, src, reduce)
+    out = geot.gather_scatter(src_index, dst_index, src, reduce)
     ref = ref_spmm(src_index, dst_index, src)
     assert torch.allclose(out, ref, atol=1e-4)
 

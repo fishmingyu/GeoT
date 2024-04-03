@@ -63,8 +63,8 @@ if __name__ == "__main__":
         # skip empty rows
         if len(row) == 0:
             continue
-        # if row[0] starts with "aten::" or "torch_index_scatter::" or "torch_sparse::"
-        if row[0].startswith("aten::") or row[0].startswith("torch_index_scatter::") or row[0].startswith("torch_sparse::"):
+        # if row[0] starts with "aten::" or "geot::" or "torch_sparse::"
+        if row[0].startswith("aten::") or row[0].startswith("geot::") or row[0].startswith("torch_sparse::"):
             # row[7] is the percentage of cuda time spent in the function    
             # row[7] is a string end with "%"
             percentages[row[0]] = row[7][:-1]

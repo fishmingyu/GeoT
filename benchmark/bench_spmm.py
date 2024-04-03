@@ -1,5 +1,5 @@
 import torch
-import torch_index_scatter
+import geot
 from utils import Dataset
 import time
 import torch_sparse
@@ -8,7 +8,7 @@ from scipy.sparse import csr_matrix
 # from dgsparse import spmm_sum
 
 def gather_weight_scatter(src_index, dst_index, weight, src, reduce):
-    return torch_index_scatter.gather_weight_scatter(src_index, dst_index, weight, src, reduce)
+    return geot.gather_weight_scatter(src_index, dst_index, weight, src, reduce)
 
 def pytorch_spmm(A, B):
     return torch.sparse.mm(A, B)

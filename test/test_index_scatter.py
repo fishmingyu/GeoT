@@ -1,5 +1,5 @@
 import torch
-import torch_index_scatter
+import geot
 
 
 def test_index_scatter():
@@ -11,7 +11,7 @@ def test_index_scatter():
     sorted_index = torch.argsort(index)
     index = index[sorted_index]
     keys = index[-1] + 1
-    out = torch_index_scatter.index_scatter(0, src, index, reduce, sorted=False)
+    out = geot.index_scatter(0, src, index, reduce, sorted=False)
 
     # use torch.scatter as reference
     ref = torch.zeros(keys, feature_size).to("cuda")

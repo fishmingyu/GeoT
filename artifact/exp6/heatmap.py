@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load the data
-# /mnt/disk3/xinchen/projects/torch_index_scatter/benchmark/benchmark_cpp/../../data/eval_data/amazon_photo_idx.npy,1,1,8,4,8,0.00904704,26.3249
 header = ['dataset', 'features', 'config1', 'config2', 'config3', 'config4', 'time', 'gflops']
 df = pd.read_csv('../SC24-Result/Ablation/sr_result.csv', header=None, names=header)
 
