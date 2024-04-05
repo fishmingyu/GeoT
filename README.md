@@ -3,10 +3,11 @@
 ### TODO
 * general reduction type
 * autograd
-* merge into torch_scatter
+* CPU version
+* PR into torch_scatter
 
 ## Motivation
-We have identified that although the scatter and segment operations are cornerstone in the construction of geometric deep learning systems, current deep learning frameworks have not optimized it effectively. What's more, current framework solution does not support fusion for segment reduction. In torch.compile, the scatter and message will be fused into a fully-atomic SpMM, which largely affects the performance. (See benchmark detail here)
+We have identified that although the scatter and segment operations are cornerstone in the construction of geometric deep learning systems, current deep learning frameworks have not optimized it effectively. What's more, current framework solution does not support fusion for segment reduction. In torch.compile, the scatter and message will be fused into a fully-atomic SpMM, which largely affects the performance. (See benchmark detail [here](https://github.com/fishmingyu/inductor_test_gather_scatter))
 
 ## Our Proposed API
 
@@ -16,9 +17,9 @@ To address these challenges, we propose new operators and paradigms as shown in 
 dst = index_scatter(dim, index, src, reduce, sorted=True) → Tensor
 ```
 
-Unlike the traditional scatter_reduce operation, we mandate that `dst` and `src` have the same number of dimensions. The index is constrained to just one dimension. It is also required that `index.size(dim) <= src.size(dim)` for the specified `dim` argument.
+Contrary to the conventional [scatter_reduce](https://pytorch.org/docs/stable/generated/torch.Tensor.scatter_reduce_.html#torch.Tensor.scatter_reduce_) operation which allows for flexibility in the dimensionality of dst and src, our approach necessitates that both dst and src tensors share an identical number of dimensions. This constraint aligns our method more closely with the [index_reduce](https://pytorch.org/docs/stable/generated/torch.Tensor.index_reduce_.html#torch.Tensor.index_reduce_) operation. 
 
-For a 3-D tensor with `reduce="sum"`, the output is calculated as follows:
+E.g. For a 3-D tensor with `reduce="sum"`, the output is calculated as follows:
 
 ```
 dst[index[i]][j][k] += src[i][j][k]  # if dim == 0
@@ -26,11 +27,11 @@ dst[i][index[j]][k] += src[i][j][k]  # if dim == 1
 dst[i][j][index[k]] += src[i][j][k]  # if dim == 2
 ```
 
-Additionally, we have integrated a `sorted` flag to optimize the index_scatter_reduce kernel's performance. A sorted index enhances processing locality and minimizes atomic operations, thereby substantially improving the parallel processing efficiency for both CPUs and GPUs. This also called segment reduction.
+Additionally, we have integrated a `sorted` flag to optimize the index_scatter_reduce kernel's performance. A sorted index enhances processing locality and minimizes atomic operations, thereby substantially improving the parallel processing efficiency for both CPUs and GPUs. This is formulated as implicit segment reduction (or [segment coo](https://pytorch-scatter.readthedocs.io/en/latest/functions/segment_coo.html#torch_scatter.segment_coo)).
 
 ### Fusion ability
 
-In GNN, message and aggregation fusion is a common technique. PyG use torch_sparse library, an optimized SpMM code to achieve this. Other than using sparse format, we achieve efficient SpMM on the top of segment reduction. In GeoT, the SpMM can simply be called via the ```gather_scatter```, in which we specify the adj is sorted by col.
+In Graph Neural Networks (GNNs), fusing the message and aggregation steps is a prevalent strategy. PyTorch Geometric ([PyG](https://github.com/pyg-team/pytorch_geometric)) utilizes the [torch_sparse](https://github.com/rusty1s/pytorch_sparse) library, which offers optimized Sparse Matrix-Matrix Multiplication (SpMM) to facilitate this process. Beyond traditional sparse format utilization, we have developed a method for efficient SpMM built upon segment reduction. Within GeoT, SpMM can be effortlessly executed using the gather_scatter function, where it's ensured that the adjacency matrix is sorted by column.
 
 
 ``` python
@@ -41,7 +42,19 @@ dst = gather_scatter(edge_index[0], edge_index[1], src, reduce) → Tensor
 dst = gather_weight_scatter(edge_index[0], edge_index[1], weight, src, reduce) → Tensor
 ```
 
-This format agnostic style keep the operator compatible with mainstream frameworks and compilers. We aim to add this feature to Triton lang in the feature.
+This format-agnostic approach ensures compatibility with mainstream frameworks and compilers by achieving segmentation implicitly, without requiring explicit sparse format specification. We plan to integrate this feature into the [Triton](https://triton-lang.org/main/index.html) language in the future.
+
+## Run GeoT
+Setup 
+```bash
+python setup.py build install
+```
+Run benchmark
+```bash
+cd benchmark
+python bench_index_scatter.py
+python bench_spmm.py
+```
 
 For more detail, please check our paper. If you find this repo useful, please cite the following bib
 
