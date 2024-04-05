@@ -45,6 +45,11 @@ This format agnostic style keep the operator compatible with mainstream framewor
 
 For more detail, please check our paper. If you find this repo useful, please cite the following bib
 
-``` latex
-
+``` bibtex
+@article{yu2024geot,
+  title={GeoT: Tensor Centric Library for Graph Neural Network via Efficient Segment Reduction on GPU},
+  author={Yu, Zhongming and Zhang, Genghan and Huang, Hanxian and Chen, Xin and Zhao, Jishen},
+  journal={arXiv preprint arXiv:2404.03019},
+  year={2024}
+}
 ```
