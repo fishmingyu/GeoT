@@ -3,6 +3,7 @@ from torch_geometric.utils import from_dgl
 import torch
 from ogb.nodeproppred import PygNodePropPredDataset
 from ogb.linkproppred import PygLinkPropPredDataset
+from torch_geometric import EdgeIndex
 
 
 class Dataset:
@@ -46,7 +47,18 @@ class Dataset:
         self.num_edges = graph.num_edges
         self.num_nodes = graph.num_nodes
 
-        idx = self.edge_index[1]
-        sorted_idx = torch.argsort(idx)
-        self.idx = idx[sorted_idx]
+        row = self.edge_index[0]
+        col = self.edge_index[1]
+
+        # stack the row and col to create the edge_index
+        tmp = EdgeIndex(torch.stack([col, row], dim=0)).sort_by('row')[0]
+        self.adj_t = tmp.to_sparse_tensor()
+        # materialize
+        self.adj_t.storage.csr2csc()
+        self.adj_t.storage.colptr()
+        assert tmp.is_sorted_by_row == True
+        assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
+        self.idx = self.adj_t.storage.row()
+        self.src_idx = self.adj_t.storage.col()
+        self.dst_idx = self.adj_t.storage.row()
 

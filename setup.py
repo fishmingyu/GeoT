@@ -59,7 +59,7 @@ def get_extensions():
 
     Extension = CUDAExtension if WITH_CUDA else CppExtension
     extension = Extension(
-        f'torch_index_scatter._C',
+        f'geot._C',
         sources,
         include_dirs=[extensions_dir],
         define_macros=define_macros,
@@ -88,10 +88,10 @@ test_requires = [
 ]
 
 setup(
-    name='torch_index_scatter',
+    name='geot',
     version=__version__,
     description=(
-        'PyTorch-Based Fast index scatter and gather operations for graph and pointcloud processing'),
+        'GeoT: Tensor Centric Library for Graph Neural Network via Efficient Segment Reduction on GPU'),
     author='Zhongming Yu, Genghan Zhang',
     author_email='zhy025@ucsd.edu',
     url=URL,

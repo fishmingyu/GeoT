@@ -21,6 +21,6 @@ at::Tensor gather_weight_scatter_cuda_impl(at::Tensor src_index,
 }
 
 // no TORCH_LIBRARY_IMPL for gather_weight_scatter
-TORCH_LIBRARY_FRAGMENT(torch_index_scatter, m) {
+TORCH_LIBRARY_FRAGMENT(geot, m) {
   m.def("gather_weight_scatter", gather_weight_scatter_cuda_impl);
 }

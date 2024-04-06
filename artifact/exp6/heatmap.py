@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load the data
-# /mnt/disk3/xinchen/projects/torch_index_scatter/benchmark/benchmark_cpp/../../data/eval_data/amazon_photo_idx.npy,1,1,8,4,8,0.00904704,26.3249
 header = ['dataset', 'features', 'config1', 'config2', 'config3', 'config4', 'time', 'gflops']
 df = pd.read_csv('../SC24-Result/Ablation/sr_result.csv', header=None, names=header)
 
@@ -26,19 +25,39 @@ df_arxiv = df_arxiv.pivot(index='config2', columns='config3', values='gflops')
 
 # plot the heatmap
 plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 10
 fig, ax = plt.subplots(2, 1, figsize=(6, 5))
 
+# set mako palette
+color = sns.color_palette("GnBu", as_cmap=True)
 
-sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".3f", cmap='GnBu')
+sns.set(font_scale=1.2)
+sns.heatmap(df_amz, ax=ax[0], annot=True, fmt=".1f", cmap=color)
 ax[0].set_title('Amazon-Photo')
-ax[0].set_ylabel('config2')
+ax[0].set_ylabel('$T_N$')
 ax[0].set_xlabel('')
-sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".3f", cmap='GnBu')
-ax[1].set_title('ogbn-arxiv')
-ax[1].set_xlabel('config3')
-ax[1].set_ylabel('config2')
+sns.heatmap(df_arxiv, ax=ax[1], annot=True, fmt=".1f", cmap=color)
+ax[1].set_title('Ogbn-Arxiv')
+ax[1].set_xlabel('$M_t$')
+ax[1].set_ylabel('$T_N$')
+
+# set font size of text in heatmap
+for i in range(2):
+    for text in ax[i].texts:
+        text.set_fontsize(13)
+        text.set_fontweight('bold')
+        text.set_fontfamily('Arial')
+
+# set font size of subfigure title
+for i in range(2):
+    ax[i].title.set_fontsize(17)
+    ax[i].title.set_fontweight('bold') 
+    # label size
+    ax[i].xaxis.label.set_fontsize(16)
+    ax[i].yaxis.label.set_fontsize(16)
+    # tick size
+    ax[i].tick_params(axis='x', labelsize=13)
+    ax[i].tick_params(axis='y', labelsize=13)
 
 plt.tight_layout()
 
-plt.savefig('heatmap.png', dpi=300)
+plt.savefig('heatmap.pdf', dpi=300, bbox_inches='tight')

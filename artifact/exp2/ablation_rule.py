@@ -72,14 +72,17 @@ speedup_df = speedup_df[['dataname', 'feature_size', 'dtree_speedup', 'tune_spee
 # draw a joint plot for the two speedup
 sns.set_theme(style="ticks")
 plt.rcParams['font.family'] = 'Arial'
-plt.rcParams['font.size'] = 12
+plt.rcParams['font.size'] = 20
 
-# draw the joint plot
+# draw the regplot with color #40b7ad scatter_kws={'s': 45, 'alpha': 0.3}
 g = sns.JointGrid(data=speedup_df, x='dtree_speedup', y='tune_speedup', space=0)
 g = g.plot_joint(sns.regplot, color='#40b7ad', scatter_kws={'s': 45, 'alpha': 0.3})
-g = g.plot_marginals(sns.histplot, kde=True, color='#40b7ad')
+# g = g.plot_marginals(sns.histplot, kde=True, color='#40b7ad')
 
 # set the labels and titles
-g.set_axis_labels('Speedup of DTREE', 'Speedup of Tuning', fontsize=14)
+g.set_axis_labels('Speedup of DTREE', 'Speedup of Tuning', fontsize=18)
+# set xticks and yticks fontsize
+g.ax_joint.tick_params(axis='x', labelsize=15)
+g.ax_joint.tick_params(axis='y', labelsize=15)
 
-plt.savefig('speedup_jointplot.png', dpi=300)
+plt.savefig('speedup_jointplot.pdf', dpi=300)
