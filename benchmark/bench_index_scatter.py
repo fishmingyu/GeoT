@@ -5,6 +5,8 @@ import time
 
 from torch_scatter import scatter
 from torch_scatter import segment_coo
+from geot.triton import launch_parallel_reduction as pr
+from geot.triton import launch_serial_reduction as sr
 
 
 def pyg_scatter_reduce(index, src):
@@ -44,13 +46,43 @@ def timeit(func, iter, *args, **kwargs):
 def test_index_scatter(file, dataset, feature_size, device):
     g = Dataset(dataset, device)
     idx = g.idx
-    src = torch.rand(idx.size(0), feature_size).to(device)
+    num_edges = idx.size(0)
+    # num_nodes = g.num_nodes
+    num_nodes = idx[-1] + 1
+    print(num_nodes, num_edges)
+    src = torch.rand(idx.size(0),feature_size).to(device)
+    output_SR = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    output_PR = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    output_torch = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    output_cuda = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    
+    # check correctness
+    sr(idx, src, output_SR, num_edges, feature_size, 32)
+    pr(idx, src, output_PR, num_edges, feature_size, 32)
+    output_torch = torch_scatter_reduce(idx, src)
+    output_cuda = index_scatter_reduce(idx, src)
+    # find out non-zero elements
+    diff_SR = torch.abs(output_torch - output_SR)
+    diff_PR = torch.abs(output_torch - output_PR)
+    diff_cuda = torch.abs(output_torch - output_cuda)
+    # print out where the difference is
+    print(f'diff_SR: {diff_SR.max()}, location: {torch.argmax(diff_SR)}')
+    print(f'diff_PR: {diff_PR.max()}, location: {torch.argmax(diff_PR)}')
+    print(f'diff_cuda: {diff_cuda.max()}, location: {torch.argmax(diff_cuda)}')
+    # total = torch.sum(diff > 1e-6)
+    # print(f"Total non-zero elements: {total}")
+    # assert torch.allclose(output_torch, output_PR)
+    # assert torch.allclose(output_torch, output_SR)
+    
     # warm up
-    for i in range(10):
+    for _ in range(10):
         pyg_scatter_reduce(idx, src)
         pyg_segment_coo(idx, src)
         torch_scatter_reduce(idx, src)
         index_scatter_reduce(idx, src)
+        pr(idx, src, output_PR, num_edges, feature_size, 32)
+        sr(idx, src, output_SR, num_edges, feature_size, 32)
+    
     # benchmark time
     iter = 100
     # file is a csv file
@@ -58,8 +90,11 @@ def test_index_scatter(file, dataset, feature_size, device):
     t2 = timeit(pyg_segment_coo, iter, idx, src)
     t3 = timeit(torch_scatter_reduce, iter, idx, src)
     t4 = timeit(index_scatter_reduce, iter, idx, src)
+    t5 = timeit(pr, iter, idx, src, output_PR, idx.size(0), feature_size, 32)
+    t6 = timeit(sr, iter, idx, src, output_SR, idx.size(0), feature_size, 32)
     # :.4f 
-    file.write(f"{t1:.4f},{t2:.4f},{t3:.4f},{t4:.4f}")
+    file.write(f"{t1:.4f},{t2:.4f},{t3:.4f},{t4:.4f},{t5:.4f},{t6:.4f}")
+    print('\n')
 
 
 if __name__ == '__main__':
@@ -68,7 +103,7 @@ if __name__ == '__main__':
     device = "cuda"
     # write benchmark result to csv file
     with open("benchop_index_scatter.csv", "w") as file:
-        file.write("dataset,feature_size,pyg_scatter_reduce,pyg_segment_coo,torch_scatter_reduce,index_scatter_reduce\n")
+        file.write("dataset,feature_size,pyg_scatter_reduce,pyg_segment_coo,torch_scatter_reduce,index_scatter_reduce,triton_pr,triton_sr\n")
         for d in datasets:
             for f in feature_size:
                 print(f"Testing {d} with feature size {f}")
