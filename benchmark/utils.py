@@ -4,6 +4,7 @@ import torch
 from ogb.nodeproppred import PygNodePropPredDataset
 from ogb.linkproppred import PygLinkPropPredDataset
 from torch_geometric import EdgeIndex
+from torch_geometric.utils import add_self_loops
 
 
 class Dataset:
@@ -44,6 +45,7 @@ class Dataset:
             raise KeyError('Unknown dataset {}.'.format(self.name))
         print("Dataset: ", self.name)
         self.edge_index = graph.edge_index.to(self.device)
+        self.edge_index, _ = add_self_loops(self.edge_index, num_nodes=graph.num_nodes)
         self.num_edges = graph.num_edges
         self.num_nodes = graph.num_nodes
 
