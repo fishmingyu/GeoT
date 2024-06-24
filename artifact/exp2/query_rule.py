@@ -11,7 +11,7 @@ feature_df = pd.read_csv(feature_path)
 feature_df['file'] = feature_df['file'].apply(lambda x: x.split('_idx.npy')[0])
 
 # 2. iterate through all the pairs of dataset and feature size, and query the rule using select function
-# if feature_size > 8, then it will return sr rule(which is 4 configs), otherwise it will return pr rule(which is 5 configs)
+# if feature_size >= 4, then it will return sr rule(which is 4 configs), otherwise it will return pr rule(which is 5 configs)
 
 datasets = feature_df['file']
 
