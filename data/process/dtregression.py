@@ -314,7 +314,7 @@ void index_scatter_sorted_wrapper(const at::Tensor &index,
     int avg = size / keys;
 """
     # if feature_size < 8, gen pr code; else gen sr code
-    function_body += "    if (feature_size < 8) {\n"
+    function_body += "    if (feature_size <= 4) {\n"
     function_body += code_pr
     function_body += "    } else {\n"
     function_body += code_sr
