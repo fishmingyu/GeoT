@@ -51,19 +51,19 @@ def test_index_scatter(file, dataset, feature_size, device):
     num_nodes = idx[-1] + 1
     print(num_nodes, num_edges)
     src = torch.rand(idx.size(0),feature_size).to(device)
-    output_SR = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
-    output_PR = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    output_sr = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
+    output_pr = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
     output_torch = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
     output_cuda = torch.zeros(num_nodes, feature_size, dtype=torch.float32, device='cuda')
     
     # check correctness
-    sr(idx, src, output_SR, num_edges, feature_size, 32)
-    pr(idx, src, output_PR, num_edges, feature_size, 32)
+    sr(idx, src, output_sr, num_edges, feature_size, 32)
+    pr(idx, src, output_pr, num_edges, feature_size, 32)
     output_torch = torch_scatter_reduce(idx, src)
     output_cuda = index_scatter_reduce(idx, src)
     # find out non-zero elements
-    diff_SR = torch.abs(output_torch - output_SR)
-    diff_PR = torch.abs(output_torch - output_PR)
+    diff_SR = torch.abs(output_torch - output_sr)
+    diff_PR = torch.abs(output_torch - output_pr)
     diff_cuda = torch.abs(output_torch - output_cuda)
     # print out where the difference is
     print(f'diff_SR: {diff_SR.max()}, location: {torch.argmax(diff_SR)}')
@@ -80,8 +80,8 @@ def test_index_scatter(file, dataset, feature_size, device):
         pyg_segment_coo(idx, src)
         torch_scatter_reduce(idx, src)
         index_scatter_reduce(idx, src)
-        pr(idx, src, output_PR, num_edges, feature_size, 32)
-        sr(idx, src, output_SR, num_edges, feature_size, 32)
+        pr(idx, src, output_pr, num_edges, feature_size, 32)
+        sr(idx, src, output_sr, num_edges, feature_size, 32)
     
     # benchmark time
     iter = 100
@@ -90,8 +90,8 @@ def test_index_scatter(file, dataset, feature_size, device):
     t2 = timeit(pyg_segment_coo, iter, idx, src)
     t3 = timeit(torch_scatter_reduce, iter, idx, src)
     t4 = timeit(index_scatter_reduce, iter, idx, src)
-    t5 = timeit(pr, iter, idx, src, output_PR, idx.size(0), feature_size, 32)
-    t6 = timeit(sr, iter, idx, src, output_SR, idx.size(0), feature_size, 32)
+    t5 = timeit(pr, iter, idx, src, output_pr, idx.size(0), feature_size, 32)
+    t6 = timeit(sr, iter, idx, src, output_sr, idx.size(0), feature_size, 32)
     # :.4f 
     file.write(f"{t1:.4f},{t2:.4f},{t3:.4f},{t4:.4f},{t5:.4f},{t6:.4f}")
     print('\n')

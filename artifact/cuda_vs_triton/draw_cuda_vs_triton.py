@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 mode = "spmm"
-date = "0624"
+date = "0701"
+group_size = 32
 dir = f"../{date}results"
-csv_path = f"{dir}/cuda_vs_triton_{mode}.csv"
+csv_path = f"{dir}/benchop_{mode}_triton.csv"
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,7 +20,7 @@ df = pd.read_csv(csv_path)
 if mode == "redcution":
     columns_to_drop = ["pyg_scatter_reduce", "pyg_segment_coo", "torch_scatter_reduce"]
 if mode == "spmm":
-    columns_to_drop = ["pytorch_spmm", "pyg_spmm"]
+    columns_to_drop = []
 df = df.drop(columns=columns_to_drop)
 # Assuming the DataFrame 'df' is already loaded and structured as specified
 df_melted = df.melt(id_vars=["dataset", "feature_size"], var_name="method", value_name="time")
@@ -37,12 +38,9 @@ if mode == "redcution":
     }
 elif mode == "spmm":
         method_name_mapping = {
-        # "pyg_scatter_reduce": "pyg_scatter_reduce",
-        # "pyg_segment_coo": "pyg_segment_coo",  # This seems to be the same, adjust if needed
-        # "torch_scatter_reduce": "torch_scatter_reduce",
-        "gather_weight_scatter": "cuda",
         "triton_pr": "triton_pr",
-        "triton_sr": "triton_sr"
+        "triton_sr": "triton_sr",
+        "torch_compile": "torch_compile"
     }
 else:
     raise ValueError(f"Unknown mode: {mode}")
@@ -84,7 +82,7 @@ for ax in g.axes.flatten():
     ax.set_title(ax.get_title().split('=')[1], fontsize=22, fontweight='bold')  # Adjust subplot title size
     # ax.set_title(ax.get_title(), fontsize=22, fontweight='bold')  # Adjust subplot title size 
 
-plt.savefig(f"{dir}/cuda_vs_triton_{mode}.pdf", dpi=300, bbox_inches='tight')
+plt.savefig(f"{dir}/triton_{mode}.pdf", dpi=300, bbox_inches='tight')
 
 
 
