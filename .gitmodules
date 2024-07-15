@@ -1,3 +1,0 @@
-[submodule "third_party/PyG"]
-	path = third_party/PyG
-	url = git@github.com:pyg-team/pytorch_geometric.git
