@@ -1,7 +1,9 @@
 import torch
 from torch_geometric.nn.models import MLP
+from torch_geometric.nn.models.basic_gnn import GIN
 from torch_geometric.nn.conv import GINConv
 
+from typing import Final
 from utils import Dataset, timeit
 import geot.match_replace as replace  
 
@@ -14,11 +16,10 @@ if __name__ == "__main__":
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--hidden_channels", type=int, default=64)
     args = parser.parse_args()
-    
-    # prepare data and models
+        
     d = Dataset(args.dataset, args.device)
     data = d.edge_index
-    model = GINConv(MLP([d.in_channels, args.hidden_channels, args.hidden_channels]), train_eps=True).to(args.device)
+    model = GIN(d.in_channels, args.hidden_channels, args.num_layers, d.num_classes, aggr='sum').to(args.device)
     
     # get control output
     out_gin = model(d.x, data)
@@ -27,7 +28,7 @@ if __name__ == "__main__":
     # from torch.export import export
     # print(f'Before:{export(model,(d.x, data)).graph_module.code}')
     exported = replace.pattern_transform(model, (d.x, data))
-    # print(f'\nAfter:{exported.graph_module.code}')
+    print(f'\nAfter:{exported.graph_module.code}')
     
     compile_exported = torch.compile(exported.module())
     out_compile = compile_exported(d.x, data)
