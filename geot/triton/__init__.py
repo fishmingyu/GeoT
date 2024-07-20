@@ -1,4 +1,4 @@
-from .reduction import launch_parallel_reduction, launch_serial_reduction
+from .seg_reduction import launch_parallel_reduction, launch_serial_reduction
 from .spmm import launch_pr_spmm, launch_sr_spmm
 from .torch_compile import launch_torch_compile_spmm
 
