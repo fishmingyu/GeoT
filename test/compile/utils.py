@@ -33,16 +33,6 @@ class Dataset:
         self.edge_index = graph.edge_index.to(self.device)
         # add self loop to edge_index
         self.edge_index, _ = torch_geometric.utils.add_self_loops(self.edge_index)
-        row = self.edge_index[0]
-        col = self.edge_index[1]
-        # stack the row and col to create the edge_index
-        tmp = EdgeIndex(torch.stack([col, row], dim=0)).sort_by('row')[0]
-        self.adj_t = tmp.to_sparse_tensor()
-        # materialize
-        self.adj_t.storage.csr2csc()
-        self.adj_t.storage.colptr()
-        assert tmp.is_sorted_by_row == True
-        assert torch.all(self.adj_t.storage.row() == torch.sort(self.adj_t.storage.row())[0])
         # check adj_t is sorted by row
         if graph.x is not None:
             self.x = graph.x.to(self.device)
