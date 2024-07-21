@@ -1,9 +1,8 @@
 import torch
 import torch.fx
 from torch.fx import subgraph_rewriter
-from torch.export import export
 
-def fused_weight_replace(graph_module : torch.fx.GraphModule) -> torch.export.ExportedProgram:
+def fused_weight_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule:
 
     def pattern_weight_scatter_view(x, value, edge_index, ls, dim):
         col = torch.ops.aten.select.int(edge_index, 0, 1)

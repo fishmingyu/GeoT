@@ -1,13 +1,12 @@
 import os 
-import sys
 
 def run_model():
     with open("model_result.csv", "w") as f:
         f.write("model, dataset, hidden_channels, sparse, original_time, compiled_time\n")
     # three dataset
     datasets = ['flickr', 'ogbn-arxiv', 'reddit2']
-    # three models
-    models = ['gin', 'gcn', 'graphsage']
+    # 7 models, 'gat' and 'arma' needs 3-dim gather_weight_scatter
+    models = ['appnp', 'arma', 'gat', 'gcn', 'gin', 'graphsage', 'sgc']
     # two hidden_channels
     hidden_channels = [32, 64]
 
@@ -18,10 +17,6 @@ def run_model():
                 print(f"Running {py_file} with dataset {dataset} and hidden_channels {hidden_channel}")
                 # run original model
                 os.system(f"python3 {py_file} --dataset {dataset} --hidden_channels {hidden_channel}")
-                # run sparse
-                # os.system(f"python3 {py_file} --dataset {dataset} --hidden_channels {hidden_channel} --sparse")
-                # run GS
-                # os.system(f"python3 {py_file} --dataset {dataset} --hidden_channels {hidden_channel} --sparse --GS")
 
 if __name__ == "__main__":
     run_model()

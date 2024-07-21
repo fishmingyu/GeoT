@@ -9,24 +9,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--dataset", type=str, default="flickr")
-    parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--hidden_channels", type=int, default=64)
     args = parser.parse_args()
     
     # prepare data and model
     d = Dataset(args.dataset, args.device)
-    data = d.adj_t if args.sparse else d.edge_index
-    kwargs = {'node_dim': 0}
-    model = SAGEConv(d.in_channels, args.hidden_channels, **kwargs).to(args.device)
+    data = d.edge_index
+    model = SAGEConv(d.in_channels, args.hidden_channels).to(args.device)
     
     # get control output
     out_sage = model(d.x, data)
     
     # replace pattern
-    from torch.export import export
-    exported = export(model, (d.x, data))
-    print(f'\nBefore:{exported.graph_module.code}')
+    # from torch.export import export
+    # print(f'\nBefore:{export(model, (d.x, data)).graph_module.code}')
     exported = replace.pattern_transform(model, (d.x, data))
     print(f'\nAfter:{exported.graph_module.code}')
     
@@ -38,13 +35,9 @@ if __name__ == '__main__':
     
     # benchmark time
     iter = 100
-    # write to csv file, test model graphSAGE with dataset
     t_graphsage = timeit(model, iter, d.x, data)
-    # t_compile_graphsage = timeit(compile_exported, iter, d.x, data)
-    
+    t_compile_graphsage = timeit(compile_exported, iter, d.x, data)
     # write with 'a' to append to the file
     with open('model_result.csv', 'a') as file:
-        file.write(f"SAGE,{args.dataset},{args.hidden_channels},{args.sparse},{t_graphsage.mean():.6f}\n")
-        # file.write(f"SAGE,{args.dataset},{args.hidden_channels},{args.sparse},{t_compile_graphsage.mean():.6f}\n")
-        # file.write(f"SAGE,{args.dataset},{args.hidden_channels},{args.sparse},{t_graphsage.mean():.6f},{t_compile_graphsage.mean():.6f}\n")
+        file.write(f"SAGE,{args.dataset},{args.hidden_channels},{t_graphsage.mean():.6f},{t_compile_graphsage.mean():.6f}\n")
         

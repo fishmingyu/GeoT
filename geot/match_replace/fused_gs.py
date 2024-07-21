@@ -1,8 +1,7 @@
 import torch
 import torch.fx
-from torch.export import export
 
-def fused_replace(graph_module : torch.fx.GraphModule) -> torch.export.ExportedProgram:
+def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule:
     graph = graph_module.graph
     
     for node in graph.nodes:

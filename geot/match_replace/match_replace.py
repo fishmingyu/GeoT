@@ -1,8 +1,8 @@
 import torch
 import torch.fx
 from torch.export import export
-from .fused_scatter import fused_replace
-from .fused_weight_scatter import fused_weight_replace
+from .fused_gs import fused_transform 
+from .fused_gws import fused_weight_transform
 
 def pattern_transform(model : torch.nn.Module, args, **kwargs) -> torch.export.ExportedProgram:
     exported = export(model, args, **kwargs)
@@ -12,11 +12,15 @@ def pattern_transform(model : torch.nn.Module, args, **kwargs) -> torch.export.E
     for node in graph.nodes:
         var_index_select : torch.fx.Node
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
+            dst = node.args[0]
             var_index_select = node.args[3]
             if var_index_select.op == 'call_function' and var_index_select.target == torch.ops.aten.index_select.default:
-                fused_replace(graph_module)
+                fused_transform(graph_module)
             elif var_index_select.op == 'call_function' and var_index_select.target == torch.ops.aten.mul.Tensor:
-                fused_weight_replace(graph_module)
+                if dst.op == 'call_function' and dst.target == torch.ops.aten.new_zeros.default:
+                    size = dst.args[1]
+                    if len(size) == 2:
+                        fused_weight_transform(graph_module)
         
     graph.eliminate_dead_code()
     graph.lint()
