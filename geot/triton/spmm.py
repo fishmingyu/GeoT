@@ -9,7 +9,7 @@ def combine_fn(left_values, left_indices, right_values, right_indices):
     return combined_values, combined_indices
 
 @triton.jit
-def parallel_spmm_sorted_coo_kernel(
+def pr_spmm_sorted_coo_kernel(
     edge_index,  # the input coo sparse matrix
     input,  # the input tensor
     output,  # the output value tensor
@@ -40,7 +40,7 @@ def parallel_spmm_sorted_coo_kernel(
 
 
 @triton.jit
-def serial_spmm_sorted_coo_naive_kernel(
+def sr_spmm_sorted_coo_naive_kernel(
     edge_index, 
     input, 
     output, 
@@ -75,12 +75,12 @@ def serial_spmm_sorted_coo_naive_kernel(
 
 
 
-def launch_parallel_spmm(indices, input, output, num_edges:tl.constexpr, feature_size: tl.constexpr, BLOCK_SIZE: tl.constexpr):
+def launch_pr_spmm(indices, input, output, num_edges:tl.constexpr, feature_size: tl.constexpr, BLOCK_SIZE: tl.constexpr):
     grid = (triton.cdiv(num_edges, BLOCK_SIZE) * feature_size,)
-    parallel_spmm_sorted_coo_kernel[grid](indices, input, output, num_edges, feature_size, BLOCK_SIZE)
+    pr_spmm_sorted_coo_kernel[grid](indices, input, output, num_edges, feature_size, BLOCK_SIZE)
 
 
-def launch_serial_spmm(edges, input, output, num_edges, feature_size, group_size):
+def launch_sr_spmm(edges, input, output, num_edges, feature_size, group_size):
     grid = (triton.cdiv(num_edges, group_size),)
-    serial_spmm_sorted_coo_naive_kernel[grid](edges, input, output, num_edges, feature_size, group_size)
+    sr_spmm_sorted_coo_naive_kernel[grid](edges, input, output, num_edges, feature_size, group_size)
    
