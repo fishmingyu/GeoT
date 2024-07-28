@@ -2,11 +2,13 @@ import os
 
 def run_model():
     with open("model_result.csv", "w") as f:
-        f.write("model, dataset, hidden_channels, sparse, original_time, compiled_time\n")
+        f.write("model, dataset, hidden_channels, original_time, compiled_time\n")
     # three dataset
     datasets = ['flickr', 'ogbn-arxiv', 'reddit2']
     # 7 models, 'gat' and 'arma' needs 3-dim gather_weight_scatter
-    models = ['appnp', 'arma', 'gat', 'gcn', 'gin', 'graphsage', 'sgc']
+    # models = ['appnp', 'arma', 'gat', 'gcn', 'gin', 'graphsage', 'sgc']
+    models = ['appnp', 'gcn', 'gin', 'graphsage', 'sgc']
+
     # two hidden_channels
     hidden_channels = [32, 64]
 
