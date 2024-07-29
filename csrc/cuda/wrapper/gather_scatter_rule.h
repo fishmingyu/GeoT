@@ -1,7 +1,7 @@
 
 #pragma once
 #include "gather_scatter_base.h"
-template <typename scalar_t, ReductionType reduce>
+template <typename scalar_t>
 void gather_scatter_sorted_wrapper(const at::Tensor &src_index,
                                    const at::Tensor &dst_index,
                                    const at::Tensor &src,
