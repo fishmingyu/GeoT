@@ -38,6 +38,7 @@ class Dataset:
             self.x = graph.x.to(self.device)
         else:
             self.x = torch.zeros(graph.num_nodes, 32).to(self.device)
+        self.x.requires_grad = True
         # print size of self.x
         self.num_edges = graph.num_edges
         self.in_channels = graph.num_features if graph.x is not None else 32

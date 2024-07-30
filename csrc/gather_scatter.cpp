@@ -8,15 +8,15 @@ using torch::autograd::AutogradContext;
 using torch::autograd::Variable;
 using torch::autograd::variable_list;
 
-// infer_schema(func): PT2 compatible Parameter only support int, float, bool,
-// None)
+// infer_schema(func): we currently don't support reduce type other than sum, to
+// support here, add a str (c10::string_view) reduce
 TORCH_LIBRARY_FRAGMENT(geot, m) {
-  m.def("gather_scatter(Tensor src_index, Tensor dst_index, Tensor src) -> "
-        "Tensor");
+  // m.def("gather_scatter(Tensor src_index, Tensor dst_index, Tensor src) -> "
+  //       "Tensor");
   m.def("gather_scatter_impl(Tensor src_index, Tensor dst_index, Tensor src) "
         "-> Tensor");
-  m.def("gather_scatter_backward_impl(Tensor src_index, Tensor dst_index, "
-        "Tensor grad_output) -> Tensor");
+  // m.def("gather_scatter_backward_impl(Tensor src_index, Tensor dst_index, "
+  //       "Tensor grad_output) -> Tensor");
 }
 
 // this kernel take a sorted index tensor and scatter the src tensor
@@ -33,15 +33,15 @@ at::Tensor gather_scatter_cuda_fwd_impl(at::Tensor src_index,
   return output;
 }
 
-at::Tensor gather_scatter_cuda_fwd_impl_meta(at::Tensor src_index,
-                                             at::Tensor dst_index,
-                                             at::Tensor src) {
-  auto max_index = dst_index[-1].item<int64_t>();
-  auto output_shape = src.sizes().vec();
-  output_shape[0] = max_index + 1;
-  auto output = torch::zeros(output_shape, src.options());
-  return output;
-}
+// at::Tensor gather_scatter_cuda_fwd_impl_meta(at::Tensor src_index,
+//                                              at::Tensor dst_index,
+//                                              at::Tensor src) {
+//   auto max_index = dst_index[-1].item<int64_t>();
+//   auto output_shape = src.sizes().vec();
+//   output_shape[0] = max_index + 1;
+//   auto output = torch::zeros(output_shape, src.options());
+//   return output;
+// }
 
 at::Tensor gather_scatter_cuda_bwd_impl(at::Tensor src_index,
                                         at::Tensor dst_index,
@@ -55,17 +55,17 @@ at::Tensor gather_scatter_cuda_bwd_impl(at::Tensor src_index,
   return grad_out;
 }
 
-at::Tensor gather_scatter_cuda_bwd_impl_meta(at::Tensor src_index,
-                                             at::Tensor dst_index,
-                                             at::Tensor grad_output) {
-  auto index = torch::cat({dst_index, src_index}, 1);
-  auto sorted_index = torch::argsort(index, 0, false);
-  auto src_index_sort = sorted_index[0];
-  auto dst_index_sort = sorted_index[1];
-  auto grad_out = gather_scatter_cuda_fwd_impl_meta(
-      src_index_sort, dst_index_sort, grad_output);
-  return grad_out;
-}
+// at::Tensor gather_scatter_cuda_bwd_impl_meta(at::Tensor src_index,
+//                                              at::Tensor dst_index,
+//                                              at::Tensor grad_output) {
+//   auto index = torch::cat({dst_index, src_index}, 1);
+//   auto sorted_index = torch::argsort(index, 0, false);
+//   auto src_index_sort = sorted_index[0];
+//   auto dst_index_sort = sorted_index[1];
+//   auto grad_out = gather_scatter_cuda_fwd_impl_meta(
+//       src_index_sort, dst_index_sort, grad_output);
+//   return grad_out;
+// }
 
 // [TODO]: need support for non sum reduce
 class GatherScatter : public torch::autograd::Function<GatherScatter> {
@@ -112,19 +112,19 @@ at::Tensor gather_scatter(at::Tensor src_index, at::Tensor dst_index,
 }
 
 TORCH_LIBRARY_IMPL(geot, CUDA, m) {
-  m.impl("gather_scatter", &gather_scatter_cuda_fwd_impl);
-  m.impl("gather_scatter_backward_impl", &gather_scatter_cuda_bwd_impl);
+  m.impl("gather_scatter_impl", &gather_scatter_cuda_fwd_impl);
+  // m.impl("gather_scatter_backward_impl", &gather_scatter_cuda_bwd_impl);
 }
 
-TORCH_LIBRARY_IMPL(geot, Meta, m) {
-  m.impl("gather_scatter", &gather_scatter_cuda_fwd_impl_meta);
-  m.impl("gather_scatter_backward_impl", &gather_scatter_cuda_bwd_impl_meta);
-}
+// TORCH_LIBRARY_IMPL(geot, Meta, m) {
+//   m.impl("gather_scatter_impl", &gather_scatter_cuda_fwd_impl_meta);
+//   m.impl("gather_scatter_backward_impl", &gather_scatter_cuda_bwd_impl_meta);
+// }
 
-TORCH_LIBRARY_IMPL(geot, Autograd, m) {
-  m.impl("gather_scatter", &gather_scatter_impl_autograd);
-}
+// TORCH_LIBRARY_IMPL(geot, Autograd, m) {
+//   m.impl("gather_scatter_impl", &gather_scatter_impl_autograd);
+// }
 
-TORCH_LIBRARY_IMPL(geot, CompositeImplicitAutograd, m) {
-  m.impl("gather_scatter", &gather_scatter);
-}
+// TORCH_LIBRARY_IMPL(geot, CompositeImplicitAutograd, m) {
+//   m.impl("gather_scatter", &gather_scatter);
+// }

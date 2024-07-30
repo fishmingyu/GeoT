@@ -22,7 +22,7 @@ def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule
             if node.args[3] == var_index_select:
                 with graph.inserting_before(node):
                     new_node = graph.call_function(
-                        torch.ops.geot.gather_scatter, args=(var_row, var_col, var_x, 'sum'))
+                        torch.ops.geot.gather_scatter, args=(var_row, var_col, var_x))
                     node.replace_all_uses_with(new_node)
                     graph.erase_node(node)          # erase index_add_1
                 # replace all uses of index_select with x (only used its dtype and device)
