@@ -15,3 +15,8 @@ at::Tensor gather_weight_scatter_cuda(const at::Tensor &src_index,
                                       const at::Tensor &src,
                                       const at::Tensor &dst,
                                       const c10::string_view reduce);
+
+at::Tensor mh_spmm_cuda(const at::Tensor &src_index,
+                        const at::Tensor &dst_index, const at::Tensor &weight,
+                        const at::Tensor &src, const at::Tensor &dst,
+                        const c10::string_view reduce);
