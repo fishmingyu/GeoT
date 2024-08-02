@@ -5,13 +5,12 @@ import geot
 def test_index_scatter():
     index_size = 1000
     feature_size = 32
-    reduce = 'sum'
     src = torch.rand(index_size, feature_size).to("cuda")
     index = torch.randint(0, 10, (index_size,)).to("cuda")
     sorted_index = torch.argsort(index)
     index = index[sorted_index]
     keys = index[-1] + 1
-    out = geot.index_scatter(0, src, index, reduce, sorted=False)
+    out = geot.index_scatter(0, src, index, sorted=False)
 
     # use torch.scatter as reference
     ref = torch.zeros(keys, feature_size).to("cuda")

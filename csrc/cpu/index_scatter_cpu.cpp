@@ -122,31 +122,27 @@ void index_scatter_sorted(const at::Tensor &self, const at::Tensor &index,
 }
 
 void index_scatter_sorted_kernel(const at::Tensor &self,
-                                 const at::Tensor &index, const at::Tensor &src,
-                                 const ReductionType &reduction) {
+                                 const at::Tensor &index, const at::Tensor &src) {
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::BFloat16, at::ScalarType::Half, self.scalar_type(),
       "index_scatter_sorted", [&] {
-        AT_DISPATCH_REDUCTION_TYPES(reduction, [&]() {
-          index_scatter_sorted<scalar_t, reduce, BLOCKING>(self, index, src);
-        });
+          index_scatter_sorted<scalar_t, ReductionType::SUM, BLOCKING>(self, index, src);
       });
 }
 
 at::Tensor index_scatter_cpu(const at::Tensor &self, const int64_t dim,
                              const at::Tensor &index, const at::Tensor &src,
-                             const c10::string_view reduce, const bool sorted) {
+                             const bool sorted) {
   TORCH_CHECK(dim >= 0 && dim < src.dim(),
               "dim must be non-negative and less than input dimensions");
   TORCH_CHECK(index.dim() == 1, "index must be 1 dimensional");
   TORCH_CHECK(src.size(dim) == index.size(0),
               "index length must be equal to src dimension size");
 
-  auto reduce_type = get_reduction_enum(reduce);
   // we will use the src as the output (self in the kernel)
 
   if (sorted) {
-    index_scatter_sorted_kernel(self, index, src, reduce_type);
+    index_scatter_sorted_kernel(self, index, src);
   } else {
     TORCH_CHECK(false, "unsorted index is not supported yet");
   }

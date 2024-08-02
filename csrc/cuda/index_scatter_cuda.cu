@@ -25,7 +25,7 @@ void scatter_reduce(const at::Tensor &index, const at::Tensor &src,
       <<<gridDim, blockDim>>>(nnz, N, src_data, indices, dst_data);
 }
 
-template <typename scalar_t, ReductionType reduce>
+template <typename scalar_t>
 void index_sorted_unsorted_wrapper(const at::Tensor &index,
                                    const at::Tensor &src,
                                    const at::Tensor &dst) {
@@ -62,44 +62,78 @@ void index_sorted_unsorted_wrapper(const at::Tensor &index,
   }
 }
 
+template <typename scalar_t, int NPerThread, int NThreadX, int NnzPerThread,
+          int NnzThreadY>
+void index_scatter_bwd(int nnz, int N, const at::Tensor &index,
+                       const at::Tensor &src, const at::Tensor &dst) {
+  // restriction
+  int blockDimX = NThreadX;
+  int blockDimY = NnzThreadY;
+
+  dim3 gridDim(CEIL(N, NThreadX * NPerThread),
+               CEIL(nnz, NnzThreadY * NnzPerThread), 1);
+  dim3 blockDim(blockDimX, blockDimY, 1);
+
+  gather_eb_sorted_kernel<scalar_t, NPerThread, NThreadX, NnzPerThread,
+                           NnzThreadY><<<gridDim, blockDim>>>(
+      nnz, N, src.data_ptr<scalar_t>(), index.data_ptr<int64_t>(), dst.data_ptr<scalar_t>());
+}
+
+template <typename scalar_t>
+void index_scatter_bwd_wrapper(const at::Tensor &index, const at::Tensor &src,
+  const at::Tensor &dst) {
+  const auto nnz = index.numel();
+  const auto N = dst.numel() / nnz;
+  index_scatter_bwd<scalar_t, 2, 16, 32, 2>(nnz, N, index, src, dst);
+}
+
 void index_scatter_sorted_dispatch(const at::Tensor &index,
-                                   const at::Tensor &src, const at::Tensor &dst,
-                                   const ReductionType &reduction) {
+                                   const at::Tensor &src, const at::Tensor &dst) {
   AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "index_scatter_sorted", [&] {
-    DISPATCH_REDUCTION_TYPES(reduction, [&]() {
-      index_scatter_sorted_wrapper<scalar_t, reduce>(index, src, dst);
-    });
+    index_scatter_sorted_wrapper<scalar_t>(index, src, dst);
   });
 }
 
 void index_scatter_unsorted_dispatch(const at::Tensor &index,
                                      const at::Tensor &src,
-                                     const at::Tensor &dst,
-                                     const ReductionType &reduction) {
+                                     const at::Tensor &dst) {
   AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "index_scatter_unsorted", [&] {
-    DISPATCH_REDUCTION_TYPES(reduction, [&]() {
-      index_sorted_unsorted_wrapper<scalar_t, reduce>(index, src, dst);
-    });
+    index_sorted_unsorted_wrapper<scalar_t>(index, src, dst);
+  });
+}
+
+void index_scatter_bwd_dispatch(const at::Tensor &index, const at::Tensor &src,
+                                const at::Tensor &dst) {
+  AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "index_scatter_bwd", [&] {
+    index_scatter_bwd_wrapper<scalar_t>(index, src, dst);
   });
 }
 
 at::Tensor index_scatter_cuda(const int64_t dim, const at::Tensor &index,
                               const at::Tensor &src, const at::Tensor &dst,
-                              const c10::string_view reduce,
                               const bool sorted) {
   TORCH_CHECK(dim >= 0 && dim < src.dim(),
               "dim must be non-negative and less than input dimensions");
   TORCH_CHECK(index.dim() == 1, "index must be 1 dimensional");
   TORCH_CHECK(src.size(dim) == index.size(0),
               "index length must be equal to src dimension size");
-
-  auto reduce_type = get_reduction_enum(reduce);
   // we will use the src as the output (self in the kernel)
 
   if (sorted) {
-    index_scatter_sorted_dispatch(index, src, dst, reduce_type);
+    index_scatter_sorted_dispatch(index, src, dst);
   } else {
-    index_scatter_unsorted_dispatch(index, src, dst, reduce_type);
+    index_scatter_unsorted_dispatch(index, src, dst);
   }
   return dst;
+}
+
+void index_scatter_bwd_cuda(const int64_t dim, const at::Tensor &index,
+  const at::Tensor &src, const at::Tensor &dst) {
+  TORCH_CHECK(dim >= 0 && dim < dst.dim(),
+  "dim must be non-negative and less than input dimensions");
+  TORCH_CHECK(index.dim() == 1, "index must be 1 dimensional");
+  TORCH_CHECK(dst.size(dim) == index.size(0),
+              "index length must be equal to dst dimension size");
+              
+  index_scatter_bwd_dispatch(index, src, dst);
 }

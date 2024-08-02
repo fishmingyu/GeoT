@@ -1,7 +1,7 @@
 #pragma once
 
 #include "index_scatter_base.h"
-template <typename scalar_t, ReductionType reduce>
+template <typename scalar_t>
 void index_scatter_sorted_wrapper(const at::Tensor &index,
                                   const at::Tensor &src,
                                   const at::Tensor &dst) {

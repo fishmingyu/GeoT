@@ -1,4 +1,3 @@
-#include "../reducetype.h"
 #include "../util/utils.h"
 #include <cooperative_groups.h>
 #include <cuda.h>
@@ -10,7 +9,7 @@
 
 using namespace cooperative_groups;
 
-template <typename scalar_t, ReductionType reduce, int ne_block>
+template <typename scalar_t, int ne_block>
 __global__ void
 index_scatter_sorted_naive_kernel(const int64_t nnz, const int64_t nv,
                                   const scalar_t *src, const int64_t *indices,

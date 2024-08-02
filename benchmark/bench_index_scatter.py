@@ -29,7 +29,7 @@ def torch_index_reduce(index, src):
     return torch.zeros(keys, src.size(1), device=device).index_add_(0, index, src)
 
 def index_scatter_reduce(index, src):
-    return geot.index_scatter(0, src, index, reduce='sum', sorted=False)
+    return geot.index_scatter(0, src, index, sorted=False)
 
 
 def timeit(func, iter, *args, **kwargs):

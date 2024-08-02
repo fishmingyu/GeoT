@@ -14,7 +14,7 @@ We have identified that although the scatter and segment operations are cornerst
 To address these challenges, we propose new operators and paradigms as shown in the following sections:
 
 ``` python
-dst = index_scatter(dim, index, src, reduce, sorted=True) → Tensor
+dst = index_scatter(dim, index, src, sorted=True) → Tensor
 ```
 
 Contrary to the conventional [scatter_reduce](https://pytorch.org/docs/stable/generated/torch.Tensor.scatter_reduce_.html#torch.Tensor.scatter_reduce_) operation which allows for flexibility in the dimensionality of dst and src, our approach necessitates that both dst and src tensors share an identical number of dimensions. This constraint aligns our method more closely with the [index_reduce](https://pytorch.org/docs/stable/generated/torch.Tensor.index_reduce_.html#torch.Tensor.index_reduce_) operation. 
