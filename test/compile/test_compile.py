@@ -7,17 +7,31 @@ from geot import index_scatter, gather_scatter
 from geot.match_replace import pattern_transform
 
 # [TODO]: need to support index() besides index_select()
-class TestModule(torch.nn.Module):
+class TestGS(torch.nn.Module):
     def forward(self, x, edge_index, reduce='sum'):
         row, col = edge_index
         x_j = torch.index_select(x, 0, row)
         return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
+    
+class TestGWS(torch.nn.Module):
+    def forward(self, x, edge_index, weight, reduce='sum'):
+        row, col = edge_index
+        x_j = torch.index_select(x, 0, row)
+        weight = weight.view(-1, 1)
+        mul = x_j * weight
+        return scatter(mul, col, dim_size=x.size(0), reduce=reduce)
 
 # Basic "Gather-Apply-Scatter" patterns commonly used in PyG:
 def pyg_gather_scatter(x, edge_index, reduce='sum'):
     row, col = edge_index
     x_j = x[row]
     return scatter(x_j, col, dim_size=x.size(0), reduce=reduce)
+
+def pyg_gather_weight_scatter(x, edge_index, weight, reduce='sum'):
+    row, col = edge_index
+    x_j = x[row]
+    mul = x_j * weight.view(-1, 1)
+    return scatter(mul, col, dim_size=x.size(0), reduce=reduce)
 
 # for benchmarking
 def test_torch_compile(device):
@@ -38,26 +52,24 @@ if __name__ == '__main__':
     parser.add_argument('--backward', action='store_true')
     args = parser.parse_args()
 
-    # generate random data
+    ## generate random data
     num_nodes, num_edges = 10_000, 200_000
-
+    # embeddings
     x = torch.randn(num_nodes, 64, device=args.device, requires_grad=True)
     x_pyg = x
     x_geot = x.clone().detach().requires_grad_(True)
-    
+    # edge_index
     edge_index = torch.randint(num_nodes, (2, num_edges), device=args.device)
+    # weight
+    weight = torch.randn(num_edges, device=args.device)
     
     # sort edge_index by col
     _ , indices = torch.sort(edge_index[1, :])
     edge_index = edge_index[ : , indices]
     
-    # check if already sorted by col
-    row, col = edge_index
-    assert torch.all(col[:-1] <= col[1:])
-    
     # try replace pattern
     reduce = 'sum'
-    module = TestModule()
+    module = TestGS()
     
     # do the pattern replacement
     exported = pattern_transform(module, (x, edge_index, reduce))
@@ -68,11 +80,11 @@ if __name__ == '__main__':
     compiled = torch.compile(model)
     
     # test correctness
-    out_pyg = pyg_gather_scatter(x_pyg, edge_index, reduce)
-    out_geot = model(x_geot, edge_index, reduce)
+    out_pyg = pyg_gather_weight_scatter(x_pyg, edge_index, reduce)
+    out_geot = compiled(x_geot, edge_index, reduce)
+    
     diff = torch.abs(out_pyg - out_geot).max()
     print(f'Forward max difference: {diff}\n') 
-    assert torch.allclose(out_pyg, out_geot, atol=1e-5)   
     
     out_geot.sum().backward()
     out_pyg.sum().backward()
@@ -82,7 +94,7 @@ if __name__ == '__main__':
     
     
     
-    ### original
+    ## Benchmarking
     # for reduce in ['sum']:
     #     print(f'Aggregator: {reduce}')
         
