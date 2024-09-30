@@ -87,7 +87,7 @@ void segment_coo_sequencial(const ValueType *src, const IndexType *index,
 }
 
 template <typename ValueType, typename IndexType>
-void gather_sequencial(const ValueType *src, const IndexType *index, 
+void gather_sequencial(const ValueType *src, const IndexType *index,
                        const int nnz, const int N, const int dst_len,
                        ValueType *dst) {
   for (int i = 0; i < nnz; i++) {
@@ -99,8 +99,20 @@ void gather_sequencial(const ValueType *src, const IndexType *index,
 }
 
 template <typename ValueType, typename IndexType>
+void gws_sequencial(ValueType *dst, const ValueType *src, IndexType *row,
+                    IndexType *col, const ValueType *weight, const int nnz,
+                    const int N, const int dst_len) {
+  for (int i = 0; i < nnz; i++) {
+#pragma unroll
+    for (int j = 0; j < N; j++) {
+      dst[row[i] * N + j] += src[col[i] * N + j] * weight[i];
+    }
+  }
+}
+
+template <typename ValueType, typename IndexType>
 bool checksegreduce(ValueType *dst, ValueType *src, IndexType *index, int nnz,
-                  int N, int dst_len) {
+                    int N, int dst_len) {
   std::vector<ValueType> dst_cpu(dst_len * N, 0);
   segment_coo_sequencial<ValueType, IndexType>(src, index, nnz, N, dst_len,
                                                dst_cpu.data());
@@ -113,6 +125,23 @@ bool checksegreduce(ValueType *dst, ValueType *src, IndexType *index, int nnz,
     }
   }
   // printf("Check passed!\n");
+  return true;
+}
+
+template <typename IndexType, typename ValueType>
+bool checkcsrgws(ValueType *dst, ValueType *src, IndexType *row, IndexType *col,
+                 const ValueType *weight, int nnz, int N, int dst_len) {
+  std::vector<ValueType> dst_cpu(dst_len * N, 0);
+  gws_sequencial<ValueType, IndexType>(dst_cpu.data(), src, row, col, weight,
+                                       nnz, N, dst_len);
+  for (int i = 0; i < N * dst_len; i++) {
+    if (fabs(dst[i] - dst_cpu[i]) > 1e-2 * fabs(dst_cpu[i])) {
+      printf("Error[%d][%d]: dst = %f, dst_cpu = %f\n", i / N, i % N, dst[i],
+             dst_cpu[i]);
+      return false;
+    }
+  }
+  printf("Check passed!\n");
   return true;
 }
 
