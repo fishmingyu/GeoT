@@ -159,6 +159,102 @@ void read_mtx_file(const char *filename, int &nrow, int &ncol, int &nnz,
   nnz = csr_indices_buffer.size();
 }
 
+// Load sparse matrix from an mtx file into CSR, also filling a coo row buffer
+template <typename IndexType>
+void read_mtx_file_csr(const char *filename, int &nrow, int &ncol, int &nnz,
+                       std::vector<IndexType> &csr_indptr_buffer,
+                       std::vector<IndexType> &csr_indices_buffer,
+                       std::vector<IndexType> &coo_rowind_buffer) {
+  FILE *f;
+
+  if ((f = fopen(filename, "r")) == NULL) {
+    printf("File %s not found", filename);
+    exit(EXIT_FAILURE);
+  }
+
+  MM_typecode matcode;
+  // Read MTX banner
+  if (mm_read_banner(f, &matcode) != 0) {
+    printf("Could not process this file.\n");
+    exit(EXIT_FAILURE);
+  }
+  if (mm_read_mtx_crd_size(f, &nrow, &ncol, &nnz) != 0) {
+    printf("Could not process this file.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  /// read tuples
+
+  std::vector<std::tuple<IndexType, IndexType>> coords;
+  int row_id, col_id;
+  float dummy;
+  for (IndexType i = 0; i < nnz; i++) {
+    if (fscanf(f, "%d", &row_id) == EOF) {
+      std::cout << "Error: not enough rows in mtx file.\n";
+      exit(EXIT_FAILURE);
+    } else {
+      int rev = 0;
+      rev = fscanf(f, "%d", &col_id);
+      if (mm_is_integer(matcode) || mm_is_real(matcode)) {
+        rev = fscanf(f, "%f", &dummy);
+        if (rev == EOF) {
+          std::cout << "Error: not enough values in mtx file.\n";
+          exit(EXIT_FAILURE);
+        }
+      } else if (mm_is_complex(matcode)) {
+        rev = fscanf(f, "%f", &dummy);
+        rev = fscanf(f, "%f", &dummy);
+        if (rev == EOF) {
+          std::cout << "Error: not enough values in mtx file.\n";
+          exit(EXIT_FAILURE);
+        }
+      }
+      // mtx format is 1-based
+      coords.push_back(std::make_tuple(row_id - 1, col_id - 1));
+    }
+  }
+
+  /// make symmetric
+
+  if (mm_is_symmetric(matcode)) {
+    std::vector<std::tuple<IndexType, IndexType>> new_coords;
+    for (auto iter = coords.begin(); iter != coords.end(); iter++) {
+      IndexType i = std::get<0>(*iter);
+      IndexType j = std::get<1>(*iter);
+      if (i != j) {
+        new_coords.push_back(std::make_tuple(i, j));
+        new_coords.push_back(std::make_tuple(j, i));
+      } else
+        new_coords.push_back(std::make_tuple(i, j));
+    }
+    std::sort(new_coords.begin(), new_coords.end());
+    coords.clear();
+    for (auto iter = new_coords.begin(); iter != new_coords.end(); iter++) {
+      if ((iter + 1) == new_coords.end() || (*iter != *(iter + 1))) {
+        coords.push_back(*iter);
+      }
+    }
+  } else {
+    std::sort(coords.begin(), coords.end());
+  }
+
+  /// generate csr from coo
+
+  csr_indptr_buffer.clear();
+  csr_indices_buffer.clear();
+  IndexType curr_pos = 0;
+  csr_indptr_buffer.push_back(0);
+
+  for (IndexType row = 0; row < nrow; row++) {
+    while ((curr_pos < nnz) && (std::get<0>(coords[curr_pos]) == row)) {
+      csr_indices_buffer.push_back(std::get<1>(coords[curr_pos]));
+      coo_rowind_buffer.push_back(std::get<0>(coords[curr_pos]));
+      curr_pos++;
+    }
+    csr_indptr_buffer.push_back(curr_pos);
+  }
+}
+
 template <typename IndexType>
 void compressedRow(IndexType nrow, std::vector<IndexType> &rowind,
                    std::vector<IndexType> &rowptr) {
@@ -249,6 +345,16 @@ template <class IndexType> struct IndexDescr_t {
   int64_t keys;
   util::RamArray<IndexType> sp_indices;
 };
+
+template <typename IndexType, typename ValueType>
+SpMatCsrDescr_t<IndexType, ValueType>
+DataLoader_Csr(const char *filename, std::vector<IndexType> &row) {
+  int nrow, ncol, nnz;
+  std::vector<IndexType> csrptr, col;
+  read_mtx_file_csr<IndexType>(filename, nrow, ncol, nnz, csrptr, col, row);
+  SpMatCsrDescr_t<IndexType, ValueType> spmat(ncol, csrptr, col);
+  return spmat;
+}
 
 template <typename ValueType, typename IndexType>
 IndexDescr_t<IndexType> DataLoader(const char *filename) {

@@ -2,6 +2,7 @@ NVCC = $(CUDA_HOME)/bin/nvcc
 CC_FLAGS = -O3 -Xcompiler "-fPIC" -shared -std=c++14
 TEST := test
 BENCHMARK := benchmark_mtx
+BENCHMARK_CSR := benchmark_mtx_csr
 RM = -rm -rf
 OBJ_DIR := objs
 
@@ -15,7 +16,7 @@ NVCC_FLAGS =\
 
 INC = -I../../csrc/util -I../../csrc/dataloader -I$(CUDA_HOME)/include
 
-all : $(TEST) $(BENCHMARK)
+all : $(TEST) $(BENCHMARK) $(BENCHMARK_CSR)
 
 $(TEST): test.o
 	$(NVCC) $(INC) $(LL) -o $@ $^
@@ -23,9 +24,12 @@ $(TEST): test.o
 $(BENCHMARK): benchmark_mtx.o
 	$(NVCC) $(INC) $(LL) -o $@ $^
 
+$(BENCHMARK_CSR): benchmark_mtx_csr.o
+	$(NVCC) $(INC) $(LL) -o $@ $^
+
 %.o: %.cu
 	$(NVCC) $(CC_FLAGS) $(NVCC_FLAGS) $(INC) -c $< 
 
 clean:
-	rm -f *.o $(TEST) $(BENCHMARK)
+	rm -f *.o $(TEST) $(BENCHMARK) $(BENCHMARK_CSR)
 	$(RM) $(OBJ_DIR)

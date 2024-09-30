@@ -7,9 +7,8 @@ void gather_scatter_sorted_dispatch(const at::Tensor &src_index,
                                     const at::Tensor &src,
                                     const at::Tensor &dst) {
   AT_DISPATCH_FLOATING_TYPES(src.scalar_type(), "gather_scatter_sorted", [&] {
-      gather_scatter_sorted_wrapper<scalar_t>(src_index, dst_index, src,
-                                                      dst);
-    });
+    gather_scatter_sorted_wrapper<scalar_t>(src_index, dst_index, src, dst);
+  });
 }
 
 // we assume that the dst_index is already sorted

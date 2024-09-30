@@ -1,3 +1,4 @@
+#include "./sddmm_kernel.cuh"
 #include "./wrapper/gather_weight_scatter_base.h"
 #include "./wrapper/gather_weight_scatter_rule.h"
 #include "header_cuda.h"
@@ -35,4 +36,27 @@ at::Tensor gather_weight_scatter_cuda(const at::Tensor &src_index,
   gather_weight_scatter_sorted_dispatch(src_index, dst_index, weight, src, dst,
                                         reduce_type);
   return dst;
+}
+
+void sddmm_coo_cuda(const at::Tensor &src_index, const at::Tensor &dst_index,
+                    const at::Tensor &mat_1, const at::Tensor &mat_2,
+                    at::Tensor &output) {
+  int D_kcol = mat_1.size(1);   // feature dimension
+  int Size = src_index.size(0); // number of edges
+  auto col_indices = src_index.data_ptr<int>();
+  auto row_indices = dst_index.data_ptr<int>();
+  auto X1 = mat_1.data_ptr<float>();
+  auto X2 = mat_2.data_ptr<float>();
+  auto out = output.data_ptr<float>();
+  dim3 gridDim(Size / 16 + (Size & 15), 1, 1);
+  if ((D_kcol % 4) == 0) {
+    sddmm_coo_ebalance_vec4<<<gridDim, dim3(8, 4, 1)>>>(
+        D_kcol, Size, row_indices, col_indices, X1, X2, out);
+  } else if ((D_kcol % 2) == 0) {
+    sddmm_coo_ebalance_vec2<<<gridDim, dim3(16, 4, 1)>>>(
+        D_kcol, Size, row_indices, col_indices, X1, X2, out);
+  } else {
+    sddmm_coo_ebalance_scalar<<<gridDim, dim3(32, 4, 1)>>>(
+        D_kcol, Size, row_indices, col_indices, X1, X2, out);
+  }
 }
