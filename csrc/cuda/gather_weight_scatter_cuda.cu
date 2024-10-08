@@ -1,4 +1,4 @@
-#include "./sddmm_kernel.cuh"
+#include "./sddmm_coo_kernel.cuh"
 #include "./wrapper/gather_weight_scatter_base.h"
 #include "./wrapper/gather_weight_scatter_rule.h"
 #include "header_cuda.h"
