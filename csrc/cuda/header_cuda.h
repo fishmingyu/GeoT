@@ -28,3 +28,11 @@ at::Tensor mh_spmm_cuda(const at::Tensor &src_index,
 void sddmm_coo_cuda(const at::Tensor &src_index, const at::Tensor &dst_index,
                     const at::Tensor &mat_1, const at::Tensor &mat_2,
                     at::Tensor &output);
+
+void sddmm_csr_cuda(const at::Tensor &rowptr_tensor,
+                    const at::Tensor &colind_tensor, const at::Tensor &mat_1,
+                    const at::Tensor &mat_2, at::Tensor &output);
+
+void csr2csc_cuda(const at::Tensor &csrptr, const at::Tensor &csrind,
+                  const at::Tensor &csrval, at::Tensor &cscptr,
+                  at::Tensor &cscind, at::Tensor &cscval);

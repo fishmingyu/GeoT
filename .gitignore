@@ -11,3 +11,4 @@ benchmark_mtx
 .clang-format
 __MACOSX
 .pytest_cache
+*.txt

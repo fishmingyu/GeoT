@@ -28,14 +28,22 @@ def fused_transform_gws(graph_module : torch.fx.GraphModule) -> torch.fx.GraphMo
                 ) or (node.args[1] == view_or_unsqueeze and node.args[0] == var_index_select):
                 var_mul = node
                 
-        # locate index_add, then replace with gather_scatter 
+        # locate index_add, then replace with gather_weight_scatter 
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
+            convert_to_csr = 0
             if node.args[3] == var_mul:
-                with graph.inserting_before(node):
-                    new_node = graph.call_function(
-                        torch.ops.geot.gather_weight_scatter, args=(var_row, var_col, var_weight, var_x,))
-                    node.replace_all_uses_with(new_node)
-                    graph.erase_node(node)          # erase index_add
+                if (convert_to_csr):
+                    with graph.inserting_before(node):
+                        csr_node = graph.call_function(torch.ops.geot.coo_to_csr, args=(var_row, var_col, var_weight,))
+                        gws_node = graph.call_function(torch.ops.geot.csr_gws, args=(csr_node, var_col, var_weight, var_x,))
+                        node.replace_all_uses_with(gws_node)
+                        graph.erase_node(node)
+                else:
+                    with graph.inserting_before(node):
+                        new_node = graph.call_function(
+                            torch.ops.geot.gather_weight_scatter, args=(var_col, var_row, var_weight, var_x,))
+                        node.replace_all_uses_with(new_node)
+                        graph.erase_node(node)          # erase index_add
                     
                 for node_replace in graph.nodes:
                     for n in range(len(node_replace.args)):

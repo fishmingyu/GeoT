@@ -30,12 +30,13 @@ def get_extensions():
 
     define_macros = [('WITH_PYTHON', None)]
     undef_macros = []
-    libraries = []
+    libraries = ['cusparse']
     extra_compile_args = {'cxx': ['-O2']}
     extra_link_args = [
         '-s',
         '-lm',
         '-ldl',
+        '-lcusparse',
     ]
 
     if WITH_CUDA:
