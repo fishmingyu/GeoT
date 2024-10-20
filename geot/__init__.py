@@ -6,6 +6,7 @@ from .gather_scatter import gather_scatter
 from .gather_weight_scatter import gather_weight_scatter
 from .mh_spmm import mh_spmm, mh_spmm_transposed
 from .csr_gws import csr_gws
+from .match_replace.format_transform import coo_to_csr
 __version__ = '0.0.1'
 
 library = '_C'
@@ -17,4 +18,4 @@ else:
     raise ImportError(f"Could not find module '{library}' in "
                       f'{osp.dirname(__file__)}')
 
-__all__ = [index_scatter, gather_scatter, gather_weight_scatter, mh_spmm, mh_spmm_transposed, csr_gws]
+__all__ = [index_scatter, gather_scatter, gather_weight_scatter, mh_spmm, mh_spmm_transposed, csr_gws, coo_to_csr]

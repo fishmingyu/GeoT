@@ -11,10 +11,10 @@ using torch::autograd::variable_list;
 TORCH_LIBRARY_FRAGMENT(geot, m) {
   m.def("csr_gws_impl(Tensor indptr, Tensor indices, Tensor "
         "weight, Tensor src) -> Tensor");
-  m.def("sddmm_csr_impl(Tensor rowptr, Tensor colind, Tensor mat_1, "
-        "Tensor mat_2) -> Tensor");
-  m.def("csr2csc_impl(Tensor csr_ptr, Tensor csr_ind, Tensor csr_val, "
-        "Tensor csc_ptr, Tensor csc_ind, Tensor csc_val) -> void");
+  // m.def("sddmm_csr_impl(Tensor rowptr, Tensor colind, Tensor mat_1, "
+  //       "Tensor mat_2) -> Tensor");
+  // m.def("csr2csc_impl(Tensor csr_ptr, Tensor csr_ind, Tensor csr_val, "
+  //       "Tensor csc_ptr, Tensor csc_ind, Tensor csc_val) -> void");
 }
 
 // this kernel take a set of sorted csr tensors and scatter the src tensor
@@ -55,6 +55,6 @@ void csr2csc_cuda_fwd_impl(at::Tensor csrptr, at::Tensor csrind,
 
 TORCH_LIBRARY_IMPL(geot, CUDA, m) {
   m.impl("csr_gws_impl", &csr_gws_cuda_fwd_impl);
-  m.impl("sddmm_csr_impl", &sddmm_csr_cuda_fwd_impl);
-  m.impl("csr2csc_impl", &csr2csc_cuda_fwd_impl);
+  // m.impl("sddmm_csr_impl", &sddmm_csr_cuda_fwd_impl);
+  // m.impl("csr2csc_impl", &csr2csc_cuda_fwd_impl);
 }

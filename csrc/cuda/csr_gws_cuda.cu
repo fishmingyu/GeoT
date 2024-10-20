@@ -35,7 +35,7 @@ void sddmm_csr_cuda(const at::Tensor &rowptr_tensor,
                     const at::Tensor &mat_2, at::Tensor &output) {
   int m = rowptr_tensor.size(0) - 1;
   int k = mat_1.size(1); // feature dimension
-  unsigned long nnz = rowptr_tensor[m].item<unsigned long>();
+  int nnz = rowptr_tensor[m].item<int>();
   auto rowptr = rowptr_tensor.data_ptr<int>();
   auto colind = colind_tensor.data_ptr<int>();
   auto D1 = mat_1.data_ptr<float>();
