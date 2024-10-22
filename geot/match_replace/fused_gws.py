@@ -30,9 +30,9 @@ def fused_transform_gws(graph_module : torch.fx.GraphModule) -> torch.fx.GraphMo
                 
         # locate index_add, then replace with gather_weight_scatter 
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
-            convert_to_csr = 0
+            transform_to_csr = 0
             if node.args[3] == var_mul:
-                if (convert_to_csr):
+                if (transform_to_csr):
                     with graph.inserting_before(node):
                         csr_node = graph.call_function(torch.ops.geot.coo_to_csr, args=(var_row, var_col, var_weight,))
                         gws_node = graph.call_function(torch.ops.geot.csr_gws, args=(csr_node, var_col, var_weight, var_x,))

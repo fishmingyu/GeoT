@@ -19,12 +19,29 @@ def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule
                 var_x = node.args[0]   
         # locate index_add, then replace with gather_scatter 
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
+            transform_to_csr = 1
             if node.args[3] == var_index_select:
-                with graph.inserting_before(node):
-                    new_node = graph.call_function(
-                        torch.ops.geot.gather_scatter, args=(var_row, var_col, var_x))
-                    node.replace_all_uses_with(new_node)
-                    graph.erase_node(node)          # erase index_add_1
+                if (transform_to_csr):
+                    with graph.inserting_before(node):
+                        weight_ones_int = graph.call_function(
+                            torch.ops.aten.ones_like, args=(var_col,))
+                        # convert to float32
+                        weight_ones = graph.call_function(
+                            torch.ops.aten.to, args=(weight_ones_int, torch.float32))
+                        rowptr_node = graph.call_function(
+                            torch.ops.geot.coo_to_csr, args=(var_row,))
+                        new_node = graph.call_function(
+                            torch.ops.geot.csr_gws, args=(rowptr_node, var_col, weight_ones, var_x))
+                        
+                        node.replace_all_uses_with(new_node)
+                        graph.erase_node(node)
+                else:
+                    with graph.inserting_before(node):
+                        new_node = graph.call_function(
+                            torch.ops.geot.gather_scatter, args=(var_row, var_col, var_x))
+                        node.replace_all_uses_with(new_node)
+                        graph.erase_node(node)          # erase index_add_1
+                        
                 # replace all uses of index_select with x (only used its dtype and device)
                 for node_replace in graph.nodes:
                     for n in range(len(node_replace.args)):
