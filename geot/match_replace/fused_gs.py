@@ -1,13 +1,17 @@
 import torch
 import torch.fx
+from .format_transform import format_transform_for_reuse_gs 
 
 def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule:
     graph = graph_module.graph
-    
+    transform_to_csr = 1
+    first_time = True
+    node_csrptr = node_weight_ones = None
     for node in graph.nodes:
         # locate row and col
         var_index_select : torch.fx.Node
         if node.op == 'call_function' and node.target == torch.ops.aten.select.int:
+            # node_edge_index = node
             if node.args[2] == 0:
                 var_row = node
             elif node.args[2] == 1:
@@ -19,22 +23,18 @@ def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule
                 var_x = node.args[0]   
         # locate index_add, then replace with gather_scatter 
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
-            transform_to_csr = 1
             if node.args[3] == var_index_select:
                 if (transform_to_csr):
+                    if (first_time == True):
+                        first_time = False
+                        node_csrptr, node_weight_ones = format_transform_for_reuse_gs(graph_module, node, var_row, var_col)
                     with graph.inserting_before(node):
-                        weight_ones_int = graph.call_function(
-                            torch.ops.aten.ones_like, args=(var_col,))
-                        # convert to float32
-                        weight_ones = graph.call_function(
-                            torch.ops.aten.to, args=(weight_ones_int, torch.float32))
-                        rowptr_node = graph.call_function(
-                            torch.ops.geot.coo_to_csr, args=(var_row,))
                         new_node = graph.call_function(
-                            torch.ops.geot.csr_gws, args=(rowptr_node, var_col, weight_ones, var_x))
+                            torch.ops.geot.csr_gws, args=(node_csrptr, var_col, node_weight_ones, var_x))
                         
                         node.replace_all_uses_with(new_node)
                         graph.erase_node(node)
+                    
                 else:
                     with graph.inserting_before(node):
                         new_node = graph.call_function(
@@ -51,5 +51,8 @@ def fused_transform(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule
                             node_replace.args = tuple(args_list) 
                 # erase index_select
                 graph.erase_node(var_index_select)
+    
+    # if (transform_to_csr):
+    #     format_transform_for_reuse(graph_module, node_edge_index)
 
     return graph_module

@@ -23,3 +23,18 @@ def _(coo_row):
     nrow_plus1 = ctx.new_dynamic_size()
     shape = [nrow_plus1]
     return coo_row.new_empty(shape, dtype=torch.int32)
+
+def format_transform_for_reuse_gs(graph_module : torch.fx.GraphModule, node_index_add, node_row, node_col) -> torch.fx.Node:
+    graph = graph_module.graph
+    with graph.inserting_before(node_index_add):
+        node_csrptr = graph.call_function(torch.ops.geot.coo_to_csr, args=(node_row,))
+        weight_ones_int = graph.call_function(torch.ops.aten.ones_like, args=(node_col,))
+        # convert to float32
+        node_weight_ones = graph.call_function(torch.ops.aten.to, args=(weight_ones_int, torch.float32))
+    return node_csrptr, node_weight_ones
+    
+def format_transform_for_reuse_gws(graph_module : torch.fx.GraphModule, node_index_add, node_row) -> torch.fx.Node:
+    graph = graph_module.graph
+    with graph.inserting_before(node_index_add):
+        node_csrptr = graph.call_function(torch.ops.geot.coo_to_csr, args=(node_row,))
+    return node_csrptr
