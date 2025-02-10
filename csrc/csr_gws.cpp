@@ -26,7 +26,7 @@ at::Tensor csr_gws_cuda_fwd_impl(at::Tensor indptr, at::Tensor indices,
   // convert dtype to int32
   at::Tensor indptr_int = indptr.to(torch::kInt32);
   at::Tensor indices_int = indices.to(torch::kInt32);
-  auto max_index = indptr.size(0) - 1;
+  auto max_index = indptr.size(0);
   auto output_shape = src.sizes().vec();
   output_shape[0] = max_index;
   auto output = torch::zeros(output_shape, src.options());
