@@ -8,7 +8,6 @@ import numpy as np
 import os
 import torch_geometric.transforms as T
 from torch_geometric import EdgeIndex
-from torch_geometric.typing import SparseTensor
 import torch_geometric
 import time
 
