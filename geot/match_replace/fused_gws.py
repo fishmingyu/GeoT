@@ -1,10 +1,13 @@
 import torch
 import torch.fx
-from torch.fx import subgraph_rewriter
+from .format_transform import format_transform_for_reuse_gws
 
 def fused_transform_gws(graph_module : torch.fx.GraphModule) -> torch.fx.GraphModule:
     graph = graph_module.graph
+    transform_to_csr = 1
+    first_time = True
     var_mul = var_index_select = var_weight = var_x = view_or_unsqueeze = None
+    node_csrptr = None
     for node in graph.nodes:
         # locate row and col
         if node.op == 'call_function' and node.target == torch.ops.aten.select.int:
@@ -30,12 +33,14 @@ def fused_transform_gws(graph_module : torch.fx.GraphModule) -> torch.fx.GraphMo
                 
         # locate index_add, then replace with gather_weight_scatter 
         if node.op == 'call_function' and node.target == torch.ops.aten.index_add.default:
-            convert_to_csr = 0
             if node.args[3] == var_mul:
-                if (convert_to_csr):
+                if (transform_to_csr):
+                    if (first_time == True):
+                        first_time = False
+                        node_csrptr = format_transform_for_reuse_gws(graph_module, node, var_row)
                     with graph.inserting_before(node):
-                        csr_node = graph.call_function(torch.ops.geot.coo_to_csr, args=(var_row, var_col, var_weight,))
-                        gws_node = graph.call_function(torch.ops.geot.csr_gws, args=(csr_node, var_col, var_weight, var_x,))
+                        # csr_node = graph.call_function(torch.ops.geot.coo_to_csr, args=(var_row,))
+                        gws_node = graph.call_function(torch.ops.geot.csr_gws, args=(node_csrptr, var_col, var_weight, var_x,))
                         node.replace_all_uses_with(gws_node)
                         graph.erase_node(node)
                 else:
@@ -51,8 +56,7 @@ def fused_transform_gws(graph_module : torch.fx.GraphModule) -> torch.fx.GraphMo
                             args_list = list(node_replace.args) 
                             args_list[n] = var_x  
                             node_replace.args = tuple(args_list) 
-                # erase mul and index_select
-                # graph.erase_node(var_mul)
+
     return graph_module
     
     
