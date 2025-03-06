@@ -52,7 +52,7 @@ def csr_to_block_format(row1: torch.Tensor, column1: torch.Tensor, degree1: torc
                 v_colum.append(col_val)
                 colmap[col_val] = c
             # # print colmap when debugging
-            # print(colmap)
+            print(colmap)
             v['colum'] = v_colum
 
             # Preallocate demo vector.
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     value = torch.tensor(sparse_matrix.data, dtype=torch.float32)
     window = 8
     wide = 8
-    rowTensor, colTensor, valueTensor = csr_to_block_format(row, col, value, window, wide)  
+    rowTensor, colTensor, valueTensor = csr_to_block_format(row, col, value, window, wide)      
     # test match
     rowTensor1, colTensor1, valueTensor1 = FS_Block.blockProcess_tf32(row, col, value, window, wide)
     assert torch.equal(rowTensor, rowTensor1)
