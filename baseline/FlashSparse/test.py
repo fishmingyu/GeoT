@@ -13,6 +13,8 @@ rowTensor, colTensor, valueTensor = FS_Block.blockProcess_tf32(row,col,value1,8,
 print(rowTensor)
 print(colTensor)
 print(valueTensor)
+# print valueTensor size
+print(valueTensor.size())
 # print(window)
 # print(atomic)
 # print(valueTensor16)

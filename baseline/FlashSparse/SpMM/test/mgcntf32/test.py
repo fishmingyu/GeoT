@@ -20,9 +20,9 @@ def check(row_pointers1, column_index1, value, rhs, n):
     
     return result
 
-m = 1000
-n = 1000
-density = 0.01
+m = 10000
+n = 10000
+density = 0.001
 sparse_matrix = sp.random(m, n, density=density, format='csr', dtype=np.float32)
 row = torch.tensor(sparse_matrix.indptr, dtype=torch.int32)
 col = torch.tensor(sparse_matrix.indices, dtype=torch.int32)
@@ -34,6 +34,7 @@ row_pointers, column_index, degrees=FS_Block.blockProcess_tf32(row, col, value, 
 
 print(row_pointers)
 print(column_index)
+print(degrees.size())
 # print(degrees)
 print()
 
@@ -88,6 +89,9 @@ result, spmm_ms_avg = FS_SpMM.forward_tf32_map(
 # cuda synchronize
 torch.cuda.synchronize()
 end = time.time()
+
+# print result size
+print("Result size: ", result.size())
 
 print("Time: ", (end - start) / epoch)
 print("SpMM time: {} ms".format(spmm_ms_avg))
